@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
@@ -19,30 +20,38 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:read', 'order:read', 'plant:read', 'cart:read'])] // ID souvent utile dans les relations
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $firstName = null; // Prénom de l'utilisateur
 
     #[ORM\Column(length: 50)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $lastName = null; // Nom de famille de l'utilisateur
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $address = null; // Adresse de livraison/facturation
 
     #[ORM\Column(length: 20, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $phoneNumber = null; // Numéro de téléphone
 
     #[ORM\Column]
+    #[Groups(['user:read', 'admin:write'])] // Les rôles peuvent être lus, mais l'écriture est réservée aux admins
     private array $roles = [];
 
     /**
      * @var string The hashed password
      */
     #[ORM\Column]
+    #[Groups(['user:write'])] // Le mot de passe ne doit JAMAIS être lu via l'API, seulement écrit
     private ?string $password = null;
 
     // Collection des commandes créées par cet utilisateur
