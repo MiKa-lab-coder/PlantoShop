@@ -1,20 +1,54 @@
+# Dépendances PHP et JS
+/vendor/             # Dépendances Composer
+/node_modules/       # Dépendances npm
 
-###> symfony/framework-bundle ###
+# Env
+/.env
 /.env.local
 /.env.local.php
 /.env.*.local
 /config/secrets/prod/prod.decrypt.private.php
-/public/bundles/
+*.env.local
+# docker-compose.override.yml
+# *.override.yml
+
+# Temp, cache, logs
 /var/
-/vendor/
-###< symfony/framework-bundle ###
-
-###> phpunit/phpunit ###
-/phpunit.xml
-/.phpunit.cache/
-###< phpunit/phpunit ###
-
-###> symfony/asset-mapper ###
+/public/bundles/
 /public/assets/
 /assets/vendor/
-###< symfony/asset-mapper ###
+/web/assets/
+/storage/
+/logs/
+
+# Tests
+/phpunit.xml
+/phpunit.xml.dist
+/.phpunit.cache/
+/coverage/
+/tests/php/coverage/
+
+# Build
+/build/
+/dist/
+
+# IDE
+.idea/
+.vscode/
+
+
+# Windows
+Thumbs.db
+
+# Fichiers de Composer / NPM
+/composer.lock
+/package-lock.json
+/yarn.lock
+# Composer bin
+/composer.phar
+
+# Fichiers de débogage et dump
+*.bak
+*.old
+*.swp
+*~

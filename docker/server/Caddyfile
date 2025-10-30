@@ -1,0 +1,29 @@
+:80 {
+# Racine
+    root * /var/www/html/public
+
+# Encodage
+    encode gzip zstd
+
+# Fichiers statiques
+    file_server
+
+# Gestion des requete avec PHP FM
+    php_fastcgi unix//var/run/php/php-fpm.sock {
+    # Définition du chemin du script PHP
+    root /var/www/html/public
+    # Passage des variables d'environnement Symfony
+    env APP_ENV dev
+    env APP_DEBUG 1
+    }
+
+# Tente de trouver le chemin exact, sinon redirige vers index.php
+    try_files {path} /index.php?{query}
+
+# Log
+    log {
+    output file /var/log/caddy/access.log {
+    roll_size 10MB
+        }
+    }
+}

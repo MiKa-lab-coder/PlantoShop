@@ -1,25 +1,124 @@
+version: '3.8'
 
+# --- Définit des variables d'environnement communes à réutiliser dans les services
+x-common-env: &common-env
+  # Environnement de l'application
+  APP_ENV: dev
+  # Secret de l'application, généralement chargé à partir d'un système de gestion de secrets
+  APP_SECRET: !secret
+  # URL de connexion à la base de données PostgreSQL (utilise le service 'database')
+  DATABASE_URL: 'postgresql://${POSTGRES_USER:-plantuser}:${POSTGRES_PASSWORD:-plantpassword}@database:5432/${POSTGRES_DB:-plantodb}?serverVersion=16&charset=utf8'
+
+  # URL de connexion à la base de données MongoDB
+  MONGODB_URL: 'mongodb://mongodb:27017/${MONGODB_DB:-plantoshop_db}'
+
+# Définit les services qui composent votre application
 services:
-###> doctrine/doctrine-bundle ###
-  database:
-    image: postgres:${POSTGRES_VERSION:-16}-alpine
+  # Service PHP pour exécuter la logique de l'application
+  php:
+    container_name: plantPHP
+    # Construit l'image PHP à partir du Dockerfile spécifié
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      # Arguments de construction pour le Dockerfile
+      args:
+        user: app
+        uid: 1000
+    restart: always
+    volumes:
+      # Monte le répertoire actuel dans le conteneur
+      - .:/var/www/html
+      # Monte le socket PHP-FPM pour la communication avec Caddy
+      - php_fpm_socket:/var/run/php
+      # Exemple de volume commenté pour le cache de composer
+      # - ~/.composer/cache:/tmp/composer
+    # Applique les variables d'environnement communes
+    environment: *common-env
+    # S'ASSURE que les services BDD sont prêts avant de démarrer PHP
+    depends_on:
+      - database # Dépend de PostgreSQL
+      - mongodb  # Dépend de MongoDB
+
+  # Service de serveur web Caddy
+  caddy:
+    image: caddy:2.7.5-alpine
+    container_name: plantCaddy
+    restart: unless-stopped
+    ports:
+      # Mappe le port 80 de l'hôte au port 80 du conteneur
+      - '80:80'
+    volumes:
+      # Monte le fichier de configuration Caddyfile
+      - ./docker/server/Caddyfile:/etc/caddy/Caddyfile
+      # Monte le code de l'application
+      - .:/var/www/html
+      # Monte le socket PHP-FPM pour la communication avec PHP
+      - php_fpm_socket:/var/run/php
+      # Persiste les données de Caddy
+      - caddy_data:/data
+      # Persiste la configuration de Caddy
+      - caddy_config:/config
+    # Caddy dépend du service PHP
+    depends_on:
+      - php # Caddy doit attendre que PHP soit prêt
+
+
+  # Service de base de données PostgreSQL (Renommé 'database' pour la compatibilité Symfony/Docker)
+  database: # Ancien nom 'postgres'
+    container_name: plantDB_PGSQL
+    image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_DB: ${POSTGRES_DB:-plantodb}
+      POSTGRES_USER: ${POSTGRES_USER:-plantuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-plantpassword}
     healthcheck:
-      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-plantodb}", "-U", "${POSTGRES_USER:-plantuser}"]
       timeout: 5s
       retries: 5
       start_period: 60s
     volumes:
-      - database_data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
-###< doctrine/doctrine-bundle ###
+      # Persiste les données PostgreSQL
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432' # Ajout du port pour l'accès externe
 
+  
+  # Service de base de données MongoDB
+  mongodb:
+    container_name: plantDB_Mongo
+    image: mongo:6.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:-}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-}
+      MONGO_INITDB_DATABASE: ${MONGODB_DB:-plantoshop_db}
+    volumes:
+      # Persiste les données MongoDB
+      - mongo_data:/data/db
+    ports:
+      # Mappe le port 27017 de l'hôte au port 27017 du conteneur
+      - '27017:27017'
+
+  # Service Node.js
+  node:
+    container_name: plantNode
+    image: node:20-alpine
+    user: node
+    volumes:
+      # Monte le code de l'application
+      - .:/var/www/html
+      # Persiste les modules node_modules
+      - node_modules:/var/www/html/node_modules
+    working_dir: /var/www/html
+    # Maintient le conteneur en cours d'exécution indéfiniment
+    command: sh -c "while true; do sleep 1000; done"
+
+
+# Volumes pour la persistance des données
 volumes:
-###> doctrine/doctrine-bundle ###
-  database_data:
-###< doctrine/doctrine-bundle ###
+  php_fpm_socket: # Volume pour le socket PHP-FPM
+  postgres_data: # Volume pour les données PostgreSQL
+  mongo_data:    # Volume pour les données MongoDB
+  caddy_data:    # Volume pour les données Caddy
+  caddy_config:  # Volume pour la configuration Caddy
+  node_modules:  # Volume pour les modules Node.js
