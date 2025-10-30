@@ -3,11 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Plant;
-use App\Entity\Category;
-use App\Entity\User;
 use App\Repository\PlantRepository;
-use App\Repository\CategoryRepository;
-use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -49,8 +45,6 @@ class PlantController extends AbstractController
         SerializerInterface $serializer,
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator,
-        CategoryRepository $categoryRepository,
-        UserRepository $userRepository
     ): JsonResponse
     {
         // Désérialise le contenu JSON en un tableau associatif pour extraire les IDs de relations
