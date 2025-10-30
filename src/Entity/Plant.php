@@ -7,6 +7,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+
 
 #[ORM\Entity(repositoryClass: PlantRepository::class)]
 class Plant
@@ -14,25 +16,32 @@ class Plant
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['plant:read', 'order:read', 'cart:read'])] // ID souvent utile dans les relations
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['plant:read', 'plant:write'])]
     private ?string $name = null; // Nom de la plante
+    
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['plant:read', 'plant:write'])]
     private ?string $description = null; // Description de la plante
 
     #[ORM\Column]
+    #[Groups(['plant:read', 'plant:write'])]
     private ?int $price = null; // Prix
 
     // Une plante a une catégorie
     #[ORM\ManyToOne(inversedBy: 'plants')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['plant:read'])] // Ajouté pour la lecture
     private ?Category $category = null;
 
     // Le créateur de la plante
     #[ORM\ManyToOne(inversedBy: 'plants')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['plant:read'])] // Ajouté pour la lecture
     private ?User $owner = null;
 
     // Les commandes qui contiennent cette plante
