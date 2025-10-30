@@ -104,8 +104,8 @@ class PlantController extends AbstractController
         SerializerInterface $serializer,
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator,
-        CategoryRepository $categoryRepository, // Ajouté
-        UserRepository $userRepository          // Ajouté
+        CategoryRepository $categoryRepository,
+        UserRepository $userRepository
     ): JsonResponse
     {
         $plant = $plantRepository->find($id);
