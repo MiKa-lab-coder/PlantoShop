@@ -4,7 +4,7 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.2",
+        "php": ">=8.3",
         "ext-ctype": "*",
         "ext-iconv": "*",
         "doctrine/dbal": "^3",
@@ -103,7 +103,6 @@
         "symfony/debug-bundle": "7.1.*",
         "symfony/maker-bundle": "^1.0",
         "symfony/stopwatch": "7.1.*",
-        "symfony/web-profiler-bundle": "7.1.*",
-        "zenstruck/foundry": "^2.7"
+        "symfony/web-profiler-bundle": "7.1.*"
     }
 }
