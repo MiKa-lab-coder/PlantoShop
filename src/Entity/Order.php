@@ -3,19 +3,17 @@
 namespace App\Entity;
 
 use App\Repository\OrderRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
-#[ORM\Table(name: '`order`')]
+#[ORM\Table(name: 'orders')]
 class Order
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['order:read', 'order:write','plant:read', 'cart:read', 'user:read'])] // ID souvent utile dans les relations
+    #[Groups(['order:read', 'order:write', 'plant:read', 'cart:read', 'user:read'])]
     private ?int $id = null;
 
     // Un client a plusieurs commandes
@@ -24,25 +22,15 @@ class Order
     #[Groups(['order:read', 'order:write'])]
     private ?User $client = null;
 
-    // Des commandes contiennent des plantes
-    #[ORM\ManyToMany(targetEntity: Plant::class, inversedBy: 'orders')]
-    #[Groups(['order:read', 'order:write'])]
-    private Collection $plants;
-
     // Une commande correspond a un panier
     #[ORM\OneToOne(inversedBy: 'order', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['order:read', 'order:write'])]
     private ?Cart $cart = null;
 
-    #[ORM\OneToOne(mappedBy: 'order', cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(mappedBy: 'orderRef', cascade: ['persist', 'remove'])]
     #[Groups(['order:read', 'order:write'])]
     private ?OrderDetails $orderDetails = null;
-
-    public function __construct()
-    {
-        $this->plants = new ArrayCollection();
-    }
 
     public function getId(): ?int
     {
@@ -57,30 +45,6 @@ class Order
     public function setClient(?User $client): static
     {
         $this->client = $client;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Plant>
-     */
-    public function getPlants(): Collection
-    {
-        return $this->plants;
-    }
-
-    public function addPlant(Plant $plant): static
-    {
-        if (!$this->plants->contains($plant)) {
-            $this->plants->add($plant);
-        }
-
-        return $this;
-    }
-
-    public function removePlant(Plant $plant): static
-    {
-        $this->plants->removeElement($plant);
 
         return $this;
     }
@@ -105,8 +69,8 @@ class Order
     public function setOrderDetails(OrderDetails $orderDetails): static
     {
         // set the owning side of the relation if necessary
-        if ($orderDetails->getOrder() !== $this) {
-            $orderDetails->setOrder($this);
+        if ($orderDetails->getOrderRef() !== $this) {
+            $orderDetails->setOrderRef($this);
         }
 
         $this->orderDetails = $orderDetails;
