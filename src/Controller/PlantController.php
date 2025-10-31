@@ -4,14 +4,13 @@ namespace App\Controller;
 
 use App\Entity\Plant;
 use App\Entity\Category;
-use App\Entity\User;
 use App\Repository\PlantRepository;
 use App\Repository\CategoryRepository;
-use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -19,28 +18,16 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class PlantController extends AbstractController
 {
     #[Route('/api/plants', name: 'api_plants_list', methods: ['GET'])]
-    public function index(
-        PlantRepository $plantRepository
-    ): JsonResponse
+    public function index(PlantRepository $plantRepository): JsonResponse
     {
         $plants = $plantRepository->findAll();
-        
-        return $this->json($plants, JsonResponse::HTTP_OK, [], ['groups' => 'plant:read']);
+        return $this->json($plants, Response::HTTP_OK, [], ['groups' => 'plant:read']);
     }
 
     #[Route('/api/plants/{id}', name: 'api_plants_show', methods: ['GET'])]
-    public function show(
-        int $id,
-        PlantRepository $plantRepository
-    ): JsonResponse
+    public function show(Plant $plant): JsonResponse
     {
-        $plant = $plantRepository->find($id);
-
-        if (!$plant) {
-            throw $this->createNotFoundException('Plant not found');
-        }
-
-        return $this->json($plant, JsonResponse::HTTP_OK, [], ['groups' => 'plant:read']);
+        return $this->json($plant, Response::HTTP_OK, [], ['groups' => 'plant:read']);
     }
     
     #[Route('/api/plants', name: 'api_plants_create', methods: ['POST'])]
@@ -49,37 +36,26 @@ class PlantController extends AbstractController
         SerializerInterface $serializer,
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator,
-        CategoryRepository $categoryRepository, // Ajouté
-        UserRepository $userRepository          // Ajouté
+        CategoryRepository $categoryRepository
     ): JsonResponse
     {
-        // Désérialise le contenu JSON en un tableau associatif pour extraire les IDs de relations
-        $data = json_decode($request->getContent(), true);
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
-        // Désérialise le reste des données en un objet Plant
+        $data = json_decode($request->getContent(), true);
         $plant = $serializer->deserialize($request->getContent(), Plant::class, 'json', ['groups' => 'plant:write']);
         
-        // Gérer la relation Category
-        if (isset($data['category_id'])) {
-            $category = $categoryRepository->find($data['category_id']);
-            if (!$category) {
-                return $this->json(['error' => 'Category not found'], JsonResponse::HTTP_BAD_REQUEST);
-            }
-            $plant->setCategory($category);
-        } else {
-            return $this->json(['error' => 'category_id is required'], JsonResponse::HTTP_BAD_REQUEST);
+        if (empty($data['category_id'])) {
+            return $this->json(['error' => 'category_id is required'], Response::HTTP_BAD_REQUEST);
         }
 
-        // Gérer la relation Owner (User)
-        if (isset($data['owner_id'])) {
-            $owner = $userRepository->find($data['owner_id']);
-            if (!$owner) {
-                return $this->json(['error' => 'Owner (User) not found'], JsonResponse::HTTP_BAD_REQUEST);
-            }
-            $plant->setOwner($owner);
-        } else {
-            return $this->json(['error' => 'owner_id is required'], JsonResponse::HTTP_BAD_REQUEST);
+        $category = $categoryRepository->find($data['category_id']);
+        if (!$category) {
+            return $this->json(['error' => 'Category not found'], Response::HTTP_BAD_REQUEST);
         }
+        $plant->setCategory($category);
+
+        // Sécurité : Le propriétaire est toujours l'utilisateur connecté
+        $plant->setOwner($this->getUser());
 
         $errors = $validator->validate($plant);
         if (count($errors) > 0) {
@@ -87,56 +63,40 @@ class PlantController extends AbstractController
             foreach ($errors as $error) {
                 $errorMessages[] = $error->getMessage();
             }
-            return $this->json(['errors' => $errorMessages], JsonResponse::HTTP_BAD_REQUEST);
+            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
         
         $entityManager->persist($plant);
         $entityManager->flush();
         
-        return $this->json($plant, JsonResponse::HTTP_CREATED, [], ['groups' => 'plant:read']);
+        return $this->json($plant, Response::HTTP_CREATED, [], ['groups' => 'plant:read']);
     }
     
     #[Route('/api/plants/{id}', name: 'api_plants_update', methods: ['PUT'])]
     public function update(
         Request $request,
-        int $id,
-        PlantRepository $plantRepository,
+        Plant $plant,
         SerializerInterface $serializer,
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator,
-        CategoryRepository $categoryRepository,
-        UserRepository $userRepository
+        CategoryRepository $categoryRepository
     ): JsonResponse
     {
-        $plant = $plantRepository->find($id);
-
-        if (!$plant) {
-            throw $this->createNotFoundException('Plant not found');
+        // Sécurité : Seul le propriétaire ou un admin peut modifier
+        if ($plant->getOwner() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('You are not the owner of this plant.');
         }
 
-        // Désérialise le contenu JSON en un tableau associatif pour extraire les IDs de relations
         $data = json_decode($request->getContent(), true);
-
-        // Désérialise le reste des données sur l'objet Plant existant
-        $serializer->deserialize($request->getContent(), Plant::class, 'json',
-            ['object_to_populate' => $plant, 'groups' => 'plant:write']);
+        $serializer->deserialize($request->getContent(), Plant::class, 'json', ['object_to_populate' => $plant, 'groups' => 'plant:write']);
         
-        // Gérer la relation Category
+        // Gérer la mise à jour de la catégorie si elle est fournie
         if (isset($data['category_id'])) {
             $category = $categoryRepository->find($data['category_id']);
             if (!$category) {
-                return $this->json(['error' => 'Category not found'], JsonResponse::HTTP_BAD_REQUEST); // Code 400
+                return $this->json(['error' => 'Category not found'], Response::HTTP_BAD_REQUEST);
             }
             $plant->setCategory($category);
-        }
-
-        // Gérer la relation Owner (User)
-        if (isset($data['owner_id'])) {
-            $owner = $userRepository->find($data['owner_id']);
-            if (!$owner) {
-                return $this->json(['error' => 'Owner (User) not found'], JsonResponse::HTTP_BAD_REQUEST);
-            }
-            $plant->setOwner($owner);
         }
 
         $errors = $validator->validate($plant);
@@ -145,30 +105,25 @@ class PlantController extends AbstractController
             foreach ($errors as $error) {
                 $errorMessages[] = $error->getMessage();
             }
-            return $this->json(['errors' => $errorMessages], JsonResponse::HTTP_BAD_REQUEST);
+            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
 
-        $entityManager->flush(); // Enregistre les modifications
+        $entityManager->flush();
 
-        return $this->json($plant, JsonResponse::HTTP_OK, [], ['groups' => 'plant:read']); // Code 200 OK
+        return $this->json($plant, Response::HTTP_OK, [], ['groups' => 'plant:read']);
     }
     
     #[Route('/api/plants/{id}', name: 'api_plants_delete', methods: ['DELETE'])]
-    public function destroy(
-        int $id,
-        PlantRepository $plantRepository,
-        EntityManagerInterface $entityManager
-    ): JsonResponse
+    public function destroy(Plant $plant, EntityManagerInterface $entityManager): JsonResponse
     {
-        $plant = $plantRepository->find($id);
-
-        if (!$plant) {
-            throw $this->createNotFoundException('Plant not found');
+        // Sécurité : Seul le propriétaire ou un admin peut supprimer
+        if ($plant->getOwner() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('You are not the owner of this plant.');
         }
 
         $entityManager->remove($plant);
         $entityManager->flush();
 
-        return $this->json(null, JsonResponse::HTTP_NO_CONTENT); // Code 204
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 }
