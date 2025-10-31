@@ -8,6 +8,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -17,96 +19,107 @@ class UserController extends AbstractController
     #[Route('/api/users', name: 'api_users_list', methods: ['GET'])]
     public function index(UserRepository $userRepository): JsonResponse
     {
-        $users = $userRepository->findAll();
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-        // Le helper $this->json() s'occupe de sérialiser
-        return $this->json($users, JsonResponse::HTTP_OK, [], ['groups' => 'user:read']);
+        $users = $userRepository->findAll();
+        return $this->json($users, Response::HTTP_OK, [], ['groups' => 'user:read']);
     }
 
     #[Route('/api/users/{id}', name: 'api_users_show', methods: ['GET'])]
-    public function show(UserRepository $userRepository, int $id): JsonResponse
+    public function show(User $user): JsonResponse
     {
-        $user = $userRepository->find($id); // Correction: Utilisation de find()
-
-        if (!$user) {
-            throw $this->createNotFoundException('User not found');
+        // Un utilisateur ne peut voir que son propre profil, sauf si c'est un admin
+        if ($user !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException();
         }
 
-        return $this->json($user, JsonResponse::HTTP_OK, [], ['groups' => 'user:read']);
+        return $this->json($user, Response::HTTP_OK, [], ['groups' => 'user:read']);
     }
 
+    // Endpoint d'inscription (public)
     #[Route('/api/users', name: 'api_users_create', methods: ['POST'])]
     public function create(
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $entityManager,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        UserPasswordHasherInterface $passwordHasher
     ): JsonResponse {
-        // Désérialise le contenu JSON en objet User
         $user = $serializer->deserialize($request->getContent(), User::class, 'json', ['groups' => 'user:write']);
 
-        // Validation du nouvel utilisateur
+        // Hachage du mot de passe
+        $hashedPassword = $passwordHasher->hashPassword($user, $user->getPassword());
+        $user->setPassword($hashedPassword);
+
+        // Sécurité : On s'assure que le rôle est bien ["ROLE_USER"]
+        $user->setRoles(['ROLE_USER']);
+
         $errors = $validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
                 $errorMessages[] = $error->getMessage();
             }
-            return $this->json(['errors' => $errorMessages], JsonResponse::HTTP_BAD_REQUEST);
+            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
 
-        $entityManager->persist($user); // Persiste le nouvel utilisateur
-        $entityManager->flush(); // Enregistre dans la base de données
+        $entityManager->persist($user);
+        $entityManager->flush();
 
-        return $this->json($user, JsonResponse::HTTP_CREATED, [], ['groups' => 'user:read']);
+        return $this->json($user, Response::HTTP_CREATED, [], ['groups' => 'user:read']);
     }
 
     #[Route('/api/users/{id}', name: 'api_users_update', methods: ['PUT'])]
     public function update(
         Request $request,
-        int $id,
-        UserRepository $userRepository,
+        User $user,
         SerializerInterface $serializer,
         EntityManagerInterface $entityManager,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        UserPasswordHasherInterface $passwordHasher
     ): JsonResponse {
-        $user = $userRepository->find($id); // Récupère l'utilisateur existant
-
-        if (!$user) {
-            throw $this->createNotFoundException('User not found');
+        // Un utilisateur ne peut modifier que son propre profil
+        if ($user !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
         }
 
-        // Désérialise le contenu JSON sur l'objet User existant
-        $serializer->deserialize($request->getContent(), User::class, 'json',
-            ['object_to_populate' => $user, 'groups' => 'user:write']);
+        $serializer->deserialize($request->getContent(), User::class, 'json', ['object_to_populate' => $user, 'groups' => 'user:write']);
 
-        // Validation des modifications
+        // Si un nouveau mot de passe est fourni, on le hache
+        $data = json_decode($request->getContent(), true);
+        if (isset($data['password'])) {
+            $hashedPassword = $passwordHasher->hashPassword($user, $data['password']);
+            $user->setPassword($hashedPassword);
+        }
+
+        // Sécurité : Empêcher un utilisateur de changer ses propres rôles
+        $user->setRoles($this->getUser()->getRoles());
+
         $errors = $validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
                 $errorMessages[] = $error->getMessage();
             }
-            return $this->json(['errors' => $errorMessages], JsonResponse::HTTP_BAD_REQUEST);
+            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
 
-        $entityManager->flush(); // Enregistre les modifications
+        $entityManager->flush();
 
-        return $this->json($user, JsonResponse::HTTP_OK, [], ['groups' => 'user:read']);
+        return $this->json($user, Response::HTTP_OK, [], ['groups' => 'user:read']);
     }
 
     #[Route('/api/users/{id}', name: 'api_users_delete', methods: ['DELETE'])]
-    public function destroy(int $id, UserRepository $userRepository, EntityManagerInterface $entityManager): JsonResponse
+    public function destroy(User $user, EntityManagerInterface $entityManager): JsonResponse
     {
-        $user = $userRepository->find($id); // Récupère l'utilisateur
-
-        if (!$user) {
-            throw $this->createNotFoundException('User not found');
+        // Un utilisateur ne peut supprimer que son propre compte, sauf si c'est un admin
+        if ($user !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException();
         }
 
-        $entityManager->remove($user); // Supprime l'utilisateur
-        $entityManager->flush(); // Enregistre la suppression
+        $entityManager->remove($user);
+        $entityManager->flush();
 
-        return $this->json(null, JsonResponse::HTTP_NO_CONTENT); // Retourne un 204 No Content
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 }
