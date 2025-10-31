@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\OrderDetailsRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: OrderDetailsRepository::class)]
 class OrderDetails
@@ -12,49 +13,63 @@ class OrderDetails
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['order:read'])]
     private ?int $id = null;
 
-    #[ORM\OneToOne(inversedBy: 'orderDetails', targetEntity: Order::class, cascade: ['persist', 'remove'])]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?Order $order = null;
+    #[ORM\OneToOne(inversedBy: 'orderDetails', targetEntity: Order::class)]
+    #[ORM\JoinColumn(nullable: false, name: "order_ref_id")]
+    private ?Order $orderRef = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['order:read'])]
     private ?string $clientFirstName = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['order:read'])]
     private ?string $clientLastName = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['order:read'])]
     private ?string $clientEmail = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['order:read'])]
     private ?string $clientAddress = null;
 
     #[ORM\Column(length: 20, nullable: true)]
+    #[Groups(['order:read'])]
     private ?string $clientPhoneNumber = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[Groups(['order:read'])]
     private ?\DateTimeImmutable $orderDate = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Groups(['order:read'])]
     private ?string $totalPrice = null;
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['order:read'])]
     private ?array $plantSummary = null;
+
+    public function __construct()
+    {
+        $this->orderDate = new \DateTimeImmutable();
+    }
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getOrder(): ?Order
+    public function getOrderRef(): ?Order
     {
-        return $this->order;
+        return $this->orderRef;
     }
 
-    public function setOrder(Order $order): static
+    public function setOrderRef(Order $orderRef): static
     {
-        $this->order = $order;
+        $this->orderRef = $orderRef;
 
         return $this;
     }
