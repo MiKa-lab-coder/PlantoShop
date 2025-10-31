@@ -3,11 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\Plant;
-use App\Entity\Category; // Ajouté
-use App\Entity\User;     // Ajouté
+use App\Entity\Category;
+use App\Entity\User;
 use App\Repository\PlantRepository;
-use App\Repository\CategoryRepository; // Ajouté
-use App\Repository\UserRepository;     // Ajouté
+use App\Repository\CategoryRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -104,8 +104,8 @@ class PlantController extends AbstractController
         SerializerInterface $serializer,
         EntityManagerInterface $entityManager,
         ValidatorInterface $validator,
-        CategoryRepository $categoryRepository, // Ajouté
-        UserRepository $userRepository          // Ajouté
+        CategoryRepository $categoryRepository,
+        UserRepository $userRepository
     ): JsonResponse
     {
         $plant = $plantRepository->find($id);
@@ -118,13 +118,14 @@ class PlantController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         // Désérialise le reste des données sur l'objet Plant existant
-        $serializer->deserialize($request->getContent(), Plant::class, 'json', ['object_to_populate' => $plant, 'groups' => 'plant:write']);
+        $serializer->deserialize($request->getContent(), Plant::class, 'json',
+            ['object_to_populate' => $plant, 'groups' => 'plant:write']);
         
         // Gérer la relation Category
         if (isset($data['category_id'])) {
             $category = $categoryRepository->find($data['category_id']);
             if (!$category) {
-                return $this->json(['error' => 'Category not found'], JsonResponse::HTTP_BAD_REQUEST);
+                return $this->json(['error' => 'Category not found'], JsonResponse::HTTP_BAD_REQUEST); // Code 400
             }
             $plant->setCategory($category);
         }
@@ -149,7 +150,7 @@ class PlantController extends AbstractController
 
         $entityManager->flush(); // Enregistre les modifications
 
-        return $this->json($plant, JsonResponse::HTTP_OK, [], ['groups' => 'plant:read']); // Code 200 OK pour la mise à jour
+        return $this->json($plant, JsonResponse::HTTP_OK, [], ['groups' => 'plant:read']); // Code 200 OK
     }
     
     #[Route('/api/plants/{id}', name: 'api_plants_delete', methods: ['DELETE'])]
@@ -168,6 +169,6 @@ class PlantController extends AbstractController
         $entityManager->remove($plant);
         $entityManager->flush();
 
-        return $this->json(null, JsonResponse::HTTP_NO_CONTENT);
+        return $this->json(null, JsonResponse::HTTP_NO_CONTENT); // Code 204
     }
 }
