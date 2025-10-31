@@ -6,6 +6,7 @@ use App\Repository\CartRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: CartRepository::class)]
 class Cart
@@ -13,18 +14,22 @@ class Cart
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['cart:read', 'order:read', 'plant:read'])] // ID souvent utile dans les relations
     private ?int $id = null;
 
     // Un panier est associé à un seul utilisateur
     #[ORM\OneToOne(inversedBy: 'cart', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['cart:read', 'cart:write'])]
     private ?User $owner = null;
 
     // Un panier contient plusieurs plantes
     #[ORM\ManyToMany(targetEntity: Plant::class, inversedBy: 'carts')]
+    #[Groups(['cart:read', 'cart:write'])]
     private Collection $plants;
 
     #[ORM\OneToOne(mappedBy: 'cart', cascade: ['persist', 'remove'])]
+    #[Groups(['cart:read', 'cart:write'])]
     private ?Order $order = null;
 
     public function __construct()
