@@ -2,122 +2,87 @@
 
 namespace App\Controller;
 
-use App\Entity\Plant;
-use App\Entity\User;
-use App\Entity\Cart;
 use App\Entity\Order;
-use App\Repository\PlantRepository;
-use App\Repository\UserRepository;
-use App\Repository\CartRepository;
+use App\Entity\OrderDetails;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class OrderController extends AbstractController
 {
     #[Route('/api/orders', name: 'api_orders_list', methods: ['GET'])]
-    public function index
-    (
-        OrderRepository $orderRepository
-    ): JsonResponse
+    public function index(OrderRepository $orderRepository): JsonResponse
     {
-       $this->denyAccessUnlessGranted('ROLE_ADMIN');
-       $order = $orderRepository->findAll();
-       return $this->json($order, Response::HTTP_OK, [], ['groups' => 'order:read']);
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        $orders = $orderRepository->findAll();
+        return $this->json($orders, Response::HTTP_OK, [], ['groups' => 'order:read']);
     }
 
     #[Route('/api/orders/{id}', name: 'api_orders_show', methods: ['GET'])]
     public function show(Order $order): JsonResponse
     {
-        $this->denyAccessUnlessGranted('view', $order);
+        if ($order->getClient() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('You cannot view this order.');
+        }
         return $this->json($order, Response::HTTP_OK, [], ['groups' => 'order:read']);
     }
 
     #[Route('/api/orders', name: 'api_orders_create', methods: ['POST'])]
-    public function create(
-        Request $request,
-        SerializerInterface $serializer,
-        EntityManagerInterface $entityManager,
-        ValidatorInterface $validator,
-        PlantRepository $plantRepository
-    ): JsonResponse
+    public function create(EntityManagerInterface $entityManager): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $user = $this->getUser();
+        $cart = $user->getCart();
 
-        $plant = $plantRepository->find($data['plant_id']);
-        if (!$plant) {
-            return $this->json(['error' => 'Plant not found'], Response::HTTP_BAD_REQUEST);
+        if (!$cart || $cart->getPlants()->isEmpty()) {
+            return $this->json(['error' => 'Your cart is empty.'], Response::HTTP_BAD_REQUEST);
         }
 
-        $order = $this->getUser()->getOrder();
-        if (!$order) {
-            $order = new Order();
-            $order->setClient($this->getUser());
-            $entityManager->persist($order);
+        $order = new Order();
+        $orderDetails = new OrderDetails();
+
+        // 1. Remplir OrderDetails avec une "photographie" des données
+        $orderDetails->setClientFirstName($user->getFirstName());
+        $orderDetails->setClientLastName($user->getLastName());
+        $orderDetails->setClientEmail($user->getEmail());
+        $orderDetails->setClientAddress($user->getAddress());
+        $orderDetails->setClientPhoneNumber($user->getPhoneNumber());
+
+        $totalPrice = 0;
+        $plantSummary = [];
+        foreach ($cart->getPlants() as $plant) {
+            $totalPrice += $plant->getPrice();
+            $plantSummary[] = [
+                'id' => $plant->getId(),
+                'name' => $plant->getName(),
+                'price' => $plant->getPrice(),
+            ];
         }
+        $orderDetails->setTotalPrice($totalPrice / 100); // Supposant que le prix est en centimes
+        $orderDetails->setPlantSummary($plantSummary);
 
-        $order->addPlant($plant);
+        // 2. Lier les entités
+        $order->setClient($user);
+        $order->setCart($cart);
+        $order->setOrderDetails($orderDetails);
+        $orderDetails->setOrderRef($order);
 
-        $errors = $validator->validate($order);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
-                }
-            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
-        }
+        // 3. Dissocier le panier de l'utilisateur pour qu'il puisse en créer un nouveau
+        $user->setCart(null);
 
+        $entityManager->persist($order);
         $entityManager->flush();
 
         return $this->json($order, Response::HTTP_CREATED, [], ['groups' => 'order:read']);
     }
 
-    #[Route('/api/orders/{id}', name: 'api_orders_update', methods: ['PUT'])]
-    public function update(
-        Request $request,
-        Order $order,
-        SerializerInterface $serializer,
-        EntityManagerInterface $entityManager,
-        ValidatorInterface $validator,
-        PlantRepository $plantRepository
-    ): JsonResponse
-    {
-        $this->denyAccessUnlessGranted('edit', $order);
-
-        $data = json_decode($request->getContent(), true);
-        $plant = $plantRepository->find($data['plant_id']);
-        if (!$plant) {
-            return $this->json(['error' => 'Plant not found'], Response::HTTP_BAD_REQUEST);
-            }
-
-        $serializer->deserialize($request->getContent(), Order::class, 'json',
-            ['object_to_populate' => $order, 'groups' => 'order:write']);
-
-
-        $errors = $validator->validate($order);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
-                }
-            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
-        }
-
-        $entityManager->flush();
-
-        return $this->json($order, Response::HTTP_OK, [], ['groups' => 'order:read']);
-    }
-
     #[Route('/api/orders/{id}', name: 'api_orders_delete', methods: ['DELETE'])]
     public function destroy(Order $order, EntityManagerInterface $entityManager): JsonResponse
     {
-        $this->denyAccessUnlessGranted('delete', $order);
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $entityManager->remove($order);
         $entityManager->flush();
