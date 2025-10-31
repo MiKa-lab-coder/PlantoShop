@@ -6,6 +6,7 @@ use App\Repository\OrderRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: '`order`')]
@@ -14,23 +15,28 @@ class Order
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['order:read', 'order:write','plant:read', 'cart:read', 'user:read'])] // ID souvent utile dans les relations
     private ?int $id = null;
 
     // Un client a plusieurs commandes
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'orders')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['order:read', 'order:write'])]
     private ?User $client = null;
 
     // Des commandes contiennent des plantes
     #[ORM\ManyToMany(targetEntity: Plant::class, inversedBy: 'orders')]
+    #[Groups(['order:read', 'order:write'])]
     private Collection $plants;
 
     // Une commande correspond a un panier
     #[ORM\OneToOne(inversedBy: 'order', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['order:read', 'order:write'])]
     private ?Cart $cart = null;
 
     #[ORM\OneToOne(mappedBy: 'order', cascade: ['persist', 'remove'])]
+    #[Groups(['order:read', 'order:write'])]
     private ?OrderDetails $orderDetails = null;
 
     public function __construct()
