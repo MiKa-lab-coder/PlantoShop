@@ -1,49 +1,39 @@
 security:
-    # Configuration du hachage des mots de passe
     password_hashers:
         App\Entity\User: 'auto'
 
-    # Configuration du fournisseur d'utilisateurs
     providers:
         app_user_provider:
             entity:
                 class: App\Entity\User
                 property: email
 
-    # Configuration des Firewalls
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        # Firewall pour la route de connexion. Il gère la création des tokens.
         login:
             pattern: ^/api/login
             stateless: true
             json_login:
-                check_path: /api/login # La route surveillée
+                check_path: /api/login
                 username_path: email
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-        # Firewall principal gere la verification des tokens.
+        # Firewall principal pour le reste de votre API.
         api:
             pattern: ^/api
             stateless: true
-            jwt:
-                # Le token sera extrait de l'en-tête Authorization de la requête.
-                authorization_header:
-                    enabled: true
-                    prefix: Bearer
+            # On dit simplement à Symfony d'utiliser l'authentification JWT pour cette zone.
+            # Le tilde (~) signifie "activé avec la configuration par défaut".
+            jwt: ~
 
-    # Règles de circulation
     access_control:
-        # La route de connexion doit être publique
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
-        # La route d'inscription doit être publique
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
-        # Toutes les routes nécessitent une authentification
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
