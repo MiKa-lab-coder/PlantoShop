@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from './App.jsx';
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import RegisterPage from './pages/RegisterPage.jsx';
 import './index.css';
 
 // On crée notre routeur ici
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
                 path: '/login', // Si l'URL est '/login', affiche LoginPage
                 element: <LoginPage />,
             },
+            {
+                path: '/register', // Si l'URL est '/register', affiche RegisterPage
+                element: <RegisterPage/>,
+            }
         ],
     },
 ]);
