@@ -5,60 +5,64 @@ namespace App\Entity;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: '`user`')]
-#[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
+#[ORM\Table(name: 'user')]
+#[UniqueEntity(fields: ['email'], message: 'Cette adresse email est déjà utilisée.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['user:read', 'order:read', 'plant:read', 'cart:read'])] // ID souvent utile dans les relations
+    #[Groups(['user:read', 'order:read', 'plant:read', 'cart:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
     #[Groups(['user:read', 'user:write'])]
+    #[Assert\NotBlank(message: "L'email ne peut pas être vide.")]
+    #[Assert\Email(message: "L\'adresse email '{{ value }}' n\'est pas une adresse valide.")]
     private ?string $email = null;
 
     #[ORM\Column(length: 50)]
     #[Groups(['user:read', 'user:write'])]
-    private ?string $firstName = null; // Prénom de l'utilisateur
+    #[Assert\NotBlank(message: "Le prénom ne peut pas être vide.")]
+    private ?string $firstName = null;
 
     #[ORM\Column(length: 50)]
     #[Groups(['user:read', 'user:write'])]
-    private ?string $lastName = null; // Nom de famille de l'utilisateur
+    #[Assert\NotBlank(message: "Le nom ne peut pas être vide.")]
+    private ?string $lastName = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
-    private ?string $address = null; // Adresse de livraison/facturation
+    private ?string $address = null;
 
     #[ORM\Column(length: 20, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
-    private ?string $phoneNumber = null; // Numéro de téléphone
+    private ?string $phoneNumber = null;
 
     #[ORM\Column]
-    #[Groups(['user:read', 'admin:write'])] // Les rôles peuvent être lus, mais l'écriture est réservée aux admins
+    #[Groups(['user:read', 'admin:write'])]
     private array $roles = [];
 
     /**
      * @var string The hashed password
      */
     #[ORM\Column]
-    #[Groups(['user:write'])] // Le mot de passe ne doit JAMAIS être lu via l'API, seulement écrit
+    #[Groups(['user:write'])] // Le mot de passe ne doit JAMAIS être lu
+    #[Assert\NotBlank(message: "Le mot de passe ne peut pas être vide.")]
+    #[Assert\Length(min: 8, minMessage: "Votre mot de passe doit faire au moins {{ limit }} caractères.")]
     private ?string $password = null;
 
-    // Collection des commandes créées par cet utilisateur
     #[ORM\OneToMany(mappedBy: 'client', targetEntity: Order::class, orphanRemoval: true)]
     private Collection $orders;
 
-    // Collection des plantes créées par cet utilisateur (pour l'Admin/Modérateur)
     #[ORM\OneToMany(mappedBy: 'owner', targetEntity: Plant::class, orphanRemoval: true)]
     private Collection $plants;
 
@@ -138,10 +142,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-
-    /**
-     * @return Collection<int, Order>
-     */
     public function getOrders(): Collection
     {
         return $this->orders;
@@ -160,7 +160,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeOrder(Order $order): static
     {
         if ($this->orders->removeElement($order)) {
-            // set the owning side to null (unless already changed)
             if ($order->getClient() === $this) {
                 $order->setClient(null);
             }
@@ -169,9 +168,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @return Collection<int, Plant>
-     */
     public function getPlants(): Collection
     {
         return $this->plants;
@@ -190,7 +186,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removePlant(Plant $plant): static
     {
         if ($this->plants->removeElement($plant)) {
-            // set the owning side to null (unless already changed)
             if ($plant->getOwner() === $this) {
                 $plant->setOwner(null);
             }
@@ -206,7 +201,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setCart(Cart $cart): static
     {
-        // set the owning side of the relation if necessary
         if ($cart->getOwner() !== $this) {
             $cart->setOwner($this);
         }
@@ -216,24 +210,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-
-    /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
-     */
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
     }
 
-    /**
-     * @see UserInterface
-     */
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
 
         return array_unique($roles);
@@ -246,9 +230,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @see PasswordAuthenticatedUserInterface
-     */
     public function getPassword(): ?string
     {
         return $this->password;
@@ -261,11 +242,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @see UserInterface
-     */
     public function eraseCredentials(): void
     {
-
     }
 }
