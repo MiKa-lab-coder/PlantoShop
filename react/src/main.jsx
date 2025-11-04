@@ -1,10 +1,35 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+import App from './App.jsx';
+import HomePage from './pages/HomePage.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import './index.css';
+
+// On crée notre routeur ici
+const router = createBrowserRouter([
+    {
+        path: '/', // La route racine
+        element: <App />, // Le composant "coquille"
+        // Les enfants qui seront affichés dans le <Outlet> de App
+        children: [
+            {
+                path: '/', // Si l'URL est '/', affiche HomePage
+                element: <HomePage />,
+            },
+            {
+                path: '/login', // Si l'URL est '/login', affiche LoginPage
+                element: <LoginPage />,
+            },
+        ],
+    },
+]);
+
+// On dit à React de rendre le ROUTEUR, et non plus App directement.
+ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+        <RouterProvider router={router} />
+    </React.StrictMode>
+);
+    
