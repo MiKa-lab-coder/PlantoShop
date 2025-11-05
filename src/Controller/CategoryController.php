@@ -22,6 +22,18 @@ class CategoryController extends AbstractController
         return $this->json($categories, Response::HTTP_OK, [], ['groups' => 'category:read']);
     }
 
+    #[Route('/api/categories/search/{query}', name: 'api_categories_search', methods: ['GET'])]
+    public function search(string $query, CategoryRepository $categoryRepository): JsonResponse
+    {
+        $categories = $categoryRepository->createQueryBuilder('c')
+           ->where('c.name LIKE :query')
+           ->setParameter('query', '%'.$query.'%')
+           ->getQuery()
+           ->getResult();
+
+        return $this->json($categories, Response::HTTP_OK, [], ['groups' => 'category:read']);
+    }
+
     #[Route('/api/categories/{id}', name: 'api_categories_show', methods: ['GET'])]
     public function show(Category $category): JsonResponse
     {
