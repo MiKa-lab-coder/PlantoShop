@@ -6,6 +6,7 @@ import App from './App.jsx';
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
+import ContactPage from './pages/ContactPage.jsx';
 import './index.css';
 
 // On crée notre routeur ici
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
             {
                 path: '/register', // Si l'URL est '/register', affiche RegisterPage
                 element: <RegisterPage/>,
+            },
+            {
+                path: 'contact', // Si l'URL est '/contact', affiche ContactPage'
+                element: <ContactPage/>,
             }
         ],
     },
