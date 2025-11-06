@@ -18,7 +18,7 @@ function Header({ isLoggedIn, onLogout }) {
         {/* Liens de navigation pour grand écran */}
         <nav className="hidden md:flex gap-6 items-center">
           <Link to="/" className="text-slate-600 hover:text-green-700">Accueil</Link>
-          <Link to="/plants" className="text-slate-600 hover:text-green-700">Nos Plantes</Link>
+          <Link to="/shop" className="text-slate-600 hover:text-green-700">Nos Plantes</Link>
           <Link to="/contact" className="text-slate-600 hover:text-green-700">Nous Contacter</Link>
         </nav>
 
