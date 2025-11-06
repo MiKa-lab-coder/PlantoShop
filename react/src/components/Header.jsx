@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, LogOut } from 'lucide-react';
 
-function Header() {
+// Composant de l'en-tête avec props isLoggedIn et onLogout pour gerer la déconnexion
+function Header({ isLoggedIn, onLogout }) {
   // Etat initial du menu burger
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -10,25 +11,34 @@ function Header() {
     <header className="bg-white shadow-md py-4 px-8 sticky top-0 z-50">
       <div className="container mx-auto flex justify-between items-center">
         {/* Logo / Titre du site */}
-        <Link to="/" className="text-2xl font-bold text-green-700">
-          PlantoShop
+        <Link to="/" className="text-2xl font-bold text-green-700 hover:text-green-600">
+            PlantoShop
         </Link>
 
         {/* Liens de navigation pour grand écran */}
         <nav className="hidden md:flex gap-6 items-center">
-          <Link to="/" className="text-slate-600 hover:text-green-600">Accueil</Link>
-          <Link to="/plants" className="text-slate-600 hover:text-green-600">Nos Plantes</Link>
-          <Link to="/contact" className="text-slate-600 hover:text-green-600">Nous Contacter</Link>
+          <Link to="/" className="text-slate-600 hover:text-green-700">Accueil</Link>
+          <Link to="/plants" className="text-slate-600 hover:text-green-700">Nos Plantes</Link>
+          <Link to="/contact" className="text-slate-600 hover:text-green-700">Nous Contacter</Link>
         </nav>
 
         {/* Icônes d'action */}
         <div className="hidden md:flex items-center gap-4">
-          <Link to="/login" className="text-slate-600 hover:text-green-600">
-            <User />
-          </Link>
-          <Link to="/cart" className="text-slate-600 hover:text-green-600">
+          {/* On affiche le bouton de connexion seulement si l'utilisateur n'est pas connecté */}
+          {!isLoggedIn && (
+            <Link to="/login" className="text-slate-600 hover:text-green-700">
+              <User />
+            </Link>
+          )}
+          <Link to="/cart" className="text-slate-600 hover:text-green-700">
             <ShoppingCart />
           </Link>
+          {/* On affiche le bouton de déconnexion seulement si l'utilisateur est connecté */}
+          {isLoggedIn && (
+            <button onClick={onLogout} className="text-red-600 hover:text-red-700">
+              <LogOut />
+            </button>
+          )}
         </div>
 
         {/* Icône du menu burger pour petit écran */}
