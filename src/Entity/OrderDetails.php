@@ -16,9 +16,10 @@ class OrderDetails
     #[Groups(['order:read'])]
     private ?int $id = null;
 
+    // Renommage de la propriété et des méthodes pour la cohérence
     #[ORM\OneToOne(inversedBy: 'orderDetails', targetEntity: Order::class)]
-    #[ORM\JoinColumn(nullable: false, name: "order_ref_id")]
-    private ?Order $orderRef = null;
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Order $theOrder = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['order:read'])]
@@ -62,14 +63,14 @@ class OrderDetails
         return $this->id;
     }
 
-    public function getOrderRef(): ?Order
+    public function getTheOrder(): ?Order
     {
-        return $this->orderRef;
+        return $this->theOrder;
     }
 
-    public function setOrderRef(Order $orderRef): static
+    public function setTheOrder(Order $theOrder): static
     {
-        $this->orderRef = $orderRef;
+        $this->theOrder = $theOrder;
 
         return $this;
     }
