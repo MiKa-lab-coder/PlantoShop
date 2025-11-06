@@ -5,46 +5,58 @@ namespace App\Controller;
 use App\Entity\Order;
 use App\Entity\OrderDetails;
 use App\Repository\OrderRepository;
+use App\Repository\PlantRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 class OrderController extends AbstractController
 {
-    #[Route('/api/orders', name: 'api_orders_list', methods: ['GET'])]
-    public function index(OrderRepository $orderRepository): JsonResponse
+    #[Route('/api/orders', name: 'api_orders_list_all', methods: ['GET'])]
+    public function listAllOrders(OrderRepository $orderRepository): JsonResponse
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
         $orders = $orderRepository->findAll();
         return $this->json($orders, Response::HTTP_OK, [], ['groups' => 'order:read']);
     }
 
+    #[Route('/api/user/orders', name: 'api_user_orders_list', methods: ['GET'])]
+    public function listUserOrders(): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $user = $this->getUser();
+        return $this->json($user->getOrders(), Response::HTTP_OK, [], ['groups' => 'order:read']);
+    }
+
     #[Route('/api/orders/{id}', name: 'api_orders_show', methods: ['GET'])]
     public function show(Order $order): JsonResponse
     {
         if ($order->getClient() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException('You cannot view this order.');
+            throw $this->createAccessDeniedException('Vous ne pouvez pas voir cette commande.');
         }
         return $this->json($order, Response::HTTP_OK, [], ['groups' => 'order:read']);
     }
 
     #[Route('/api/orders', name: 'api_orders_create', methods: ['POST'])]
-    public function create(EntityManagerInterface $entityManager): JsonResponse
+    public function create(Request $request, PlantRepository $plantRepository, EntityManagerInterface $entityManager): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         $user = $this->getUser();
-        $cart = $user->getCart();
+        $data = json_decode($request->getContent(), true);
+        $cartItems = $data['items'] ?? [];
 
-        if (!$cart || $cart->getPlants()->isEmpty()) {
-            return $this->json(['error' => 'Your cart is empty.'], Response::HTTP_BAD_REQUEST);
+        if (empty($cartItems)) {
+            return $this->json(['error' => 'Le panier est vide.'], Response::HTTP_BAD_REQUEST);
         }
 
         $order = new Order();
-        $orderDetails = new OrderDetails();
+        $order->setClient($user);
 
-        // 1. Remplir OrderDetails avec une "photographie" des données
+        $orderDetails = new OrderDetails();
+        $orderDetails->setTheOrder($order);
         $orderDetails->setClientFirstName($user->getFirstName());
         $orderDetails->setClientLastName($user->getLastName());
         $orderDetails->setClientEmail($user->getEmail());
@@ -53,27 +65,31 @@ class OrderController extends AbstractController
 
         $totalPrice = 0;
         $plantSummary = [];
-        foreach ($cart->getPlants() as $plant) {
-            $totalPrice += $plant->getPrice();
+
+        foreach ($cartItems as $item) {
+            $plant = $plantRepository->find($item['plant']['id']);
+            if (!$plant) {
+                return $this->json(['error' => 'Plante non trouvée: ' . $item['plant']['name']], Response::HTTP_NOT_FOUND);
+            }
+
+            $quantity = $item['quantity'];
+            // Le prix est récupéré depuis la BDD, pas depuis le client (sécurité)
+            $totalPrice += $plant->getPrice() * $quantity;
+            
+            $order->addPlant($plant);
             $plantSummary[] = [
                 'id' => $plant->getId(),
                 'name' => $plant->getName(),
+                'quantity' => $quantity,
                 'price' => $plant->getPrice(),
             ];
         }
-        $orderDetails->setTotalPrice($totalPrice / 100); // Supposant que le prix est en centimes
+
+        $orderDetails->setTotalPrice($totalPrice);
         $orderDetails->setPlantSummary($plantSummary);
 
-        // 2. Lier les entités
-        $order->setClient($user);
-        $order->setCart($cart);
-        $order->setOrderDetails($orderDetails);
-        $orderDetails->setOrderRef($order);
-
-        // 3. Dissocier le panier de l'utilisateur pour qu'il puisse en créer un nouveau
-        $user->setCart(null);
-
         $entityManager->persist($order);
+        $entityManager->persist($orderDetails);
         $entityManager->flush();
 
         return $this->json($order, Response::HTTP_CREATED, [], ['groups' => 'order:read']);
