@@ -14,27 +14,24 @@ class Cart
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['cart:read', 'order:read', 'plant:read'])] // ID souvent utile dans les relations
+    #[Groups(['cart:read', 'order:read'])]
     private ?int $id = null;
 
-    // Un panier est associé à un seul utilisateur
     #[ORM\OneToOne(inversedBy: 'cart', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['cart:read', 'cart:write'])]
+    #[Groups(['cart:read'])]
     private ?User $owner = null;
 
-    // Un panier contient plusieurs plantes
-    #[ORM\ManyToMany(targetEntity: Plant::class, inversedBy: 'carts')]
-    #[Groups(['cart:read', 'cart:write'])]
-    private Collection $plants;
+    #[ORM\OneToMany(mappedBy: 'cart', targetEntity: CartItem::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[Groups(['cart:read'])]
+    private Collection $items;
 
     #[ORM\OneToOne(mappedBy: 'cart', cascade: ['persist', 'remove'])]
-    #[Groups(['cart:read', 'cart:write'])]
     private ?Order $order = null;
 
     public function __construct()
     {
-        $this->plants = new ArrayCollection();
+        $this->items = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -50,31 +47,34 @@ class Cart
     public function setOwner(User $owner): static
     {
         $this->owner = $owner;
-
         return $this;
     }
 
     /**
-     * @return Collection<int, Plant>
+     * @return Collection<int, CartItem>
      */
-    public function getPlants(): Collection
+    public function getItems(): Collection
     {
-        return $this->plants;
+        return $this->items;
     }
 
-    public function addPlant(Plant $plant): static
+    public function addItem(CartItem $item): static
     {
-        if (!$this->plants->contains($plant)) {
-            $this->plants->add($plant);
+        if (!$this->items->contains($item)) {
+            $this->items->add($item);
+            $item->setCart($this);
         }
-
         return $this;
     }
 
-    public function removePlant(Plant $plant): static
+    public function removeItem(CartItem $item): static
     {
-        $this->plants->removeElement($plant);
-
+        if ($this->items->removeElement($item)) {
+            // set the owning side to null (unless already changed)
+            if ($item->getCart() === $this) {
+                $item->setCart(null);
+            }
+        }
         return $this;
     }
 
@@ -85,13 +85,21 @@ class Cart
 
     public function setOrder(Order $order): static
     {
-        // Met à jour l'association si nécessaire
         if ($order->getCart() !== $this) {
             $order->setCart($this);
         }
-
         $this->order = $order;
-
         return $this;
+    }
+
+    // Méthode utilitaire pour calculer le total du panier
+    #[Groups(['cart:read'])]
+    public function getTotal(): float
+    {
+        $total = 0.0;
+        foreach ($this->getItems() as $item) {
+            $total += $item->getTotal();
+        }
+        return $total;
     }
 }
