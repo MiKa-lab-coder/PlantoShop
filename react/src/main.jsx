@@ -7,9 +7,11 @@ import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
+import CartPage from './pages/CartPage.jsx';
+import ShopPage from './pages/ShopPage.jsx';
 import './index.css';
 
-// On crée notre routeur ici
+// Creation du ROUTEUR
 const router = createBrowserRouter([
     {
         path: '/', // La route racine
@@ -31,6 +33,14 @@ const router = createBrowserRouter([
             {
                 path: 'contact', // Si l'URL est '/contact', affiche ContactPage'
                 element: <ContactPage/>,
+            },
+            {
+                path: 'cart', // Si l'URL est '/cart', affiche CartPage'
+                element: <CartPage/>,
+            },
+            {
+                path: 'shop', // Si l'URL est '/shop', affiche ShopPage'
+                element: <ShopPage/>,
             }
         ],
     },
