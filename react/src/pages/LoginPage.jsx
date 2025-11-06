@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useOutletContext } from 'react-router-dom'; // Importer useOutletContext
 import { AtSign, Lock, LogIn } from 'lucide-react';
 
 function LoginPage() {
+  // Récupérer handleLogin depuis le contexte de l'Outlet
+  const { handleLogin } = useOutletContext();
 
-    // Etat initial du formulaire
+  // Etat initial du formulaire
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-    // Fonction de navigation
+  // Fonction de navigation
   const navigate = useNavigate();
 
   // Fonction de soumission du formulaire
@@ -28,8 +30,6 @@ function LoginPage() {
       });
 
       const data = await response.json();
-      // Debug
-        //console.log(data)
 
       if (!response.ok) {
         throw new Error(data.message || 'Email ou mot de passe incorrect.');
@@ -38,12 +38,12 @@ function LoginPage() {
       // IMPORTANT, recuperation et stockage du token
       if (data.token) {
         localStorage.setItem('token', data.token);
-        //console.log('Connexion réussie, token reçu !');
+        // Appel de handeLogin pour mettre à jour l'état de connexion
+        handleLogin();
         navigate('/');
       }
     } catch (err) {
       setError(err.message);
-      //console.error('Erreur de connexion:', err);
     } finally {
       setIsLoading(false);
     }
