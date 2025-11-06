@@ -16,39 +16,38 @@ class Plant
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['plant:read', 'order:read', 'cart:read'])] // ID souvent utile dans les relations
+    #[Groups(['plant:read', 'order:read', 'cart:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['plant:read', 'plant:write'])]
-    private ?string $name = null; // Nom de la plante
-    
+    private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT)]
     #[Groups(['plant:read', 'plant:write'])]
-    private ?string $description = null; // Description de la plante
+    private ?string $description = null;
 
     #[ORM\Column]
     #[Groups(['plant:read', 'plant:write'])]
-    private ?int $price = null; // Prix
+    private ?int $price = null;
 
-    // Une plante a une catégorie
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['plant:read', 'plant:write'])]
+    private ?string $imageUrl = null;
+
     #[ORM\ManyToOne(inversedBy: 'plants')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['plant:read'])] // Ajouté pour la lecture
+    #[Groups(['plant:read'])]
     private ?Category $category = null;
 
-    // Le créateur de la plante
     #[ORM\ManyToOne(inversedBy: 'plants')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['plant:read'])] // Ajouté pour la lecture
+    #[Groups(['plant:read'])]
     private ?User $owner = null;
 
-    // Les commandes qui contiennent cette plante
     #[ORM\ManyToMany(targetEntity: Order::class, mappedBy: 'plants')]
     private Collection $orders;
 
-    // Les paniers qui contiennent cette plante
     #[ORM\ManyToMany(targetEntity: Cart::class, mappedBy: 'plants')]
     private Collection $carts;
 
@@ -71,7 +70,6 @@ class Plant
     public function setName(string $name): static
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -83,7 +81,6 @@ class Plant
     public function setDescription(string $description): static
     {
         $this->description = $description;
-
         return $this;
     }
 
@@ -95,7 +92,17 @@ class Plant
     public function setPrice(int $price): static
     {
         $this->price = $price;
+        return $this;
+    }
 
+    public function getImageUrl(): ?string
+    {
+        return $this->imageUrl;
+    }
+
+    public function setImageUrl(?string $imageUrl): static
+    {
+        $this->imageUrl = $imageUrl;
         return $this;
     }
 
@@ -107,7 +114,6 @@ class Plant
     public function setCategory(?Category $category): static
     {
         $this->category = $category;
-
         return $this;
     }
 
@@ -119,7 +125,6 @@ class Plant
     public function setOwner(?User $owner): static
     {
         $this->owner = $owner;
-
         return $this;
     }
 
@@ -137,7 +142,6 @@ class Plant
             $this->orders->add($order);
             $order->addPlant($this);
         }
-
         return $this;
     }
 
@@ -146,7 +150,6 @@ class Plant
         if ($this->orders->removeElement($order)) {
             $order->removePlant($this);
         }
-
         return $this;
     }
 
@@ -164,7 +167,6 @@ class Plant
             $this->carts->add($cart);
             $cart->addPlant($this);
         }
-
         return $this;
     }
 
@@ -173,7 +175,6 @@ class Plant
         if ($this->carts->removeElement($cart)) {
             $cart->removePlant($this);
         }
-
         return $this;
     }
 }
