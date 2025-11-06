@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link, useOutletContext } from 'react-router-dom'; // Importer useOutletContext
+import { useNavigate, Link, useOutletContext } from 'react-router-dom';
 import { AtSign, Lock, LogIn } from 'lucide-react';
 
 function LoginPage() {
