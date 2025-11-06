@@ -2,12 +2,12 @@
 
 namespace App\Controller;
 
-use App\Entity\Plant;
-use App\Entity\User;
 use App\Entity\Cart;
-use App\Repository\PlantRepository;
-use App\Repository\UserRepository;
+use App\Entity\CartItem;
+use App\Entity\Plant;
+use App\Repository\CartItemRepository;
 use App\Repository\CartRepository;
+use App\Repository\PlantRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -15,106 +15,144 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+#[Route('/api/cart')]
 class CartController extends AbstractController
 {
-    #[Route('/api/carts', name: 'api_carts_list', methods: ['GET'])]
-    public function index(CartRepository $cartRepository): JsonResponse
+    private function getOrCreateCart(EntityManagerInterface $entityManager): Cart
     {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-        $carts = $cartRepository->findAll();
-        return $this->json($carts, Response::HTTP_OK, [], ['groups' => 'cart:read']);
-    }
-
-    #[Route('/api/carts/{id}', name: 'api_carts_show', methods: ['GET'])]
-    public function show(Cart $cart): JsonResponse
-    {
-        $this->denyAccessUnlessGranted('view', $cart);
-        return $this->json($cart, Response::HTTP_OK, [], ['groups' => 'cart:read']);
-    }
-
-    #[Route('/api/carts', name: 'api_carts_create', methods: ['POST'])]
-    public function create(
-        Request $request,
-        SerializerInterface $serializer,
-        EntityManagerInterface $entityManager,
-        ValidatorInterface $validator,
-        PlantRepository $plantRepository
-    ): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-        $plant = $plantRepository->find($data['plant_id']);
-        if (!$plant) {
-            return $this->json(['error' => 'Plant not found'], Response::HTTP_BAD_REQUEST);
+        $user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException('Vous devez être connecté pour accéder au panier.');
         }
 
-        $cart = $this->getUser()->getCart();
+        $cart = $user->getCart();
         if (!$cart) {
             $cart = new Cart();
-            $cart->setOwner($this->getUser());
+            $cart->setOwner($user);
             $entityManager->persist($cart);
+            // No flush needed here, it will be flushed with the item operations
+        }
+        return $cart;
+    }
+
+    #[Route('', name: 'api_cart_show', methods: ['GET'])]
+    public function show(EntityManagerInterface $entityManager): JsonResponse
+    {
+        $cart = $this->getOrCreateCart($entityManager);
+        return $this->json($cart, Response::HTTP_OK, [], ['groups' => 'cart:read']);
+    }
+
+    #[Route('/items', name: 'api_cart_add_item', methods: ['POST'])]
+    public function addItem(Request $request, PlantRepository $plantRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $plantId = $data['plantId'] ?? null;
+        $quantity = $data['quantity'] ?? 1;
+
+        $plant = $plantRepository->find($plantId);
+        if (!$plant) {
+            return $this->json(['error' => 'Plante non trouvée'], Response::HTTP_NOT_FOUND);
         }
 
-        $cart->addPlant($plant);
+        $cart = $this->getOrCreateCart($entityManager);
 
-        $errors = $validator->validate($cart);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
+        // Vérifier si l'article existe déjà
+        $existingItem = null;
+        foreach ($cart->getItems() as $item) {
+            if ($item->getPlant() === $plant) {
+                $existingItem = $item;
+                break;
             }
-            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Mettre à jour la quantité si l'article existe déjà
+        if ($existingItem) {
+            $existingItem->setQuantity($existingItem->getQuantity() + $quantity);
+        } else {
+            $newItem = new CartItem();
+            $newItem->setPlant($plant);
+            $newItem->setQuantity($quantity);
+            $cart->addItem($newItem);
         }
 
         $entityManager->flush();
-
-        return $this->json($cart, Response::HTTP_CREATED, [], ['groups' => 'cart:read']);
+        return $this->json($cart, Response::HTTP_OK, [], ['groups' => 'cart:read']);
     }
 
-    #[Route('/api/carts/{id}', name: 'api_carts_update', methods: ['PUT'])]
-    public function update(
-        Request $request,
-        Cart $cart,
-        SerializerInterface $serializer,
-        EntityManagerInterface $entityManager,
-        ValidatorInterface $validator,
-        PlantRepository $plantRepository
-    ): JsonResponse
+    #[Route('/items/{id}', name: 'api_cart_update_item', methods: ['PUT'])]
+    public function updateItem(CartItem $item, Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
-        $this->denyAccessUnlessGranted('edit', $cart);
+        // Vérifier si l'utilisateur est propriétaire du panier
+        if ($item->getCart()->getOwner() !== $this->getUser()) {
+            return $this->json(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
+        }
 
         $data = json_decode($request->getContent(), true);
-        $plant = $plantRepository->find($data['plant_id']);
-        if (!$plant) {
-            return $this->json(['error' => 'Plant not found'], Response::HTTP_BAD_REQUEST);
+        $quantity = $data['quantity'] ?? null;
+
+        if ($quantity === null || !is_int($quantity) || $quantity < 1) {
+            return $this->json(['error' => 'Quantité invalide'], Response::HTTP_BAD_REQUEST);
         }
 
-        $serializer->deserialize($request->getContent(), Cart::class, 'json',['object_to_populate' => $cart,
-            'groups' => 'cart:write']);
+        // Mettre à jour la quantité
+        $item->setQuantity($quantity);
+        $entityManager->flush();
 
-        $errors = $validator->validate($cart);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
-            }
-            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
+        return $this->json($item->getCart(), Response::HTTP_OK, [], ['groups' => 'cart:read']);
+    }
+
+    #[Route('/items/{id}', name: 'api_cart_remove_item', methods: ['DELETE'])]
+    public function removeItem(CartItem $item, EntityManagerInterface $entityManager): JsonResponse
+    {
+        // Vérifier si l'utilisateur est propriétaire du panier
+        if ($item->getCart()->getOwner() !== $this->getUser()) {
+            return $this->json(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
         }
 
+        // Supprimer l'article du panier
+        $cart = $item->getCart();
+        $cart->removeItem($item);
         $entityManager->flush();
 
         return $this->json($cart, Response::HTTP_OK, [], ['groups' => 'cart:read']);
     }
-    
-    #[Route('/api/carts/{id}', name: 'api_carts_delete', methods: ['DELETE'])]
-    public function destroy(Cart $cart, EntityManagerInterface $entityManager): JsonResponse
+
+    #[Route('/merge', name: 'api_cart_merge', methods: ['POST'])]
+    public function merge(Request $request, PlantRepository $plantRepository, EntityManagerInterface $entityManager): JsonResponse
     {
-        $this->denyAccessUnlessGranted('delete', $cart);
+        $localCartItems = json_decode($request->getContent(), true);
+        if (!is_array($localCartItems)) {
+            return $this->json(['error' => 'Données du panier local invalides'], Response::HTTP_BAD_REQUEST);
+        }
 
-        $entityManager->remove($cart);
+        $cart = $this->getOrCreateCart($entityManager);
+
+        foreach ($localCartItems as $localItem) {
+            $plant = $plantRepository->find($localItem['plantId'] ?? null);
+            if (!$plant) continue; // Skip if plant not found
+
+            $quantity = $localItem['quantity'] ?? 1;
+
+            $existingItem = null;
+            foreach ($cart->getItems() as $item) {
+                if ($item->getPlant() === $plant) {
+                    $existingItem = $item;
+                    break;
+                }
+            }
+
+            if ($existingItem) {
+                $existingItem->setQuantity($existingItem->getQuantity() + $quantity);
+            } else {
+                $newItem = new CartItem();
+                $newItem->setPlant($plant);
+                $newItem->setQuantity($quantity);
+                $cart->addItem($newItem);
+            }
+        }
+
         $entityManager->flush();
-
-        return $this->json(null, Response::HTTP_NO_CONTENT);
+        return $this->json($cart, Response::HTTP_OK, [], ['groups' => 'cart:read']);
     }
 }
