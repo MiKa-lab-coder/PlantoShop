@@ -19,7 +19,7 @@ function ShopPage() {
                     const searchResults = JSON.parse(searchResultsJSON);
                     setPlants(searchResults);
                     setIsSearchResult(true); // On note que c'est un résultat de recherche
-                    localStorage.removeItem('searchResults'); // On nettoie après utilisation
+                    localStorage.removeItem('searchResults');
                 } else {
                     // Si la clé n'existe pas, on charge toutes les plantes.
                     const response = await fetch('http://localhost/api/plants');
@@ -27,9 +27,6 @@ function ShopPage() {
                         throw new Error('Impossible de récupérer les plantes.');
                     }
                     const data = await response.json();
-                    // Debug
-                    // console.log(data)
-
                     setPlants(data);
                     setIsSearchResult(false);
                 }
@@ -43,12 +40,16 @@ function ShopPage() {
         fetchPlants();
     }, []);
 
-    // Fonction pour ajouter une plante au panier
-    const handleAddToCart = (plantToAdd) => {
+    // Gère l'ajout d'une plante au panier
+    const handleAddToCart = (e, plantToAdd) => {
+        // Empêcher la navigation lorsque l'on clique sur le bouton
+        e.stopPropagation();
+        e.preventDefault();
+
+        // Verifie
         const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
         const existingItemIndex = currentCart.findIndex(item => item.plant.id === plantToAdd.id);
 
-        // Si la plante existe déjà dans le panier, on incrémente sa quantité
         let newCart;
         if (existingItemIndex > -1) {
             newCart = currentCart.map((item, index) =>
@@ -58,12 +59,15 @@ function ShopPage() {
             newCart = [...currentCart, { plant: plantToAdd, quantity: 1 }];
         }
 
-        // On met à jour le panier dans le localStorage
         localStorage.setItem('cart', JSON.stringify(newCart));
         alert(`${plantToAdd.name} a été ajouté au panier !`);
     };
 
-    // Affichage des plantes
+    // Gère le clic sur la carte pour stocker la plante avant la redirection
+    const handleCardClick = (plant) => {
+        localStorage.setItem('selectedPlant', JSON.stringify(plant));
+    };
+
     if (isLoading) return <div className="text-center p-8">Chargement des plantes...</div>;
     if (error) return <div className="text-center p-8 text-red-600">Erreur: {error}</div>;
 
@@ -76,24 +80,34 @@ function ShopPage() {
             {plants.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {plants.map(plant => (
-                        <div key={plant.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                        <Link 
+                            to={`/plant/${plant.id}`} 
+                            key={plant.id} 
+                            onClick={() => handleCardClick(plant)} // Ajout du gestionnaire de clic
+                            className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col hover:shadow-xl
+                             transition-shadow duration-300"
+                        >
                             <img src={plant.imageUrl || 'https://via.placeholder.com/200'} alt={plant.name}
                                  className="w-full h-48 object-cover" />
-                            <div className="p-4">
+                            {/* Conteneur principal avec flex-grow pour pousser le pied de page vers le bas */}
+                            <div className="p-4 flex flex-col flex-grow">
                                 <h3 className="text-xl font-semibold text-slate-800 mb-2">{plant.name}</h3>
-                                <p className="text-slate-600 text-sm mb-4">{plant.description.substring(0, 70)}...</p>
-                                <div className="flex justify-between items-center">
+                                <h4 className="text-l font-semibold text-slate-800 mb-2">{plant.category.name}</h4>
+                                {/* flex-grow sur la description pour qu'elle prenne l'espace disponible */}
+                                <p className="text-slate-600 text-sm mb-4 flex-grow">{plant.description.substring(0, 100)}...</p>
+                                {/* Pied de page de la carte */}
+                                <div className="flex justify-between items-center mt-auto">
                                     <span className="text-lg font-bold text-green-700">{plant.price.toFixed(2)} €</span>
                                     <button
-                                        onClick={() => handleAddToCart(plant)}
+                                        onClick={(e) => handleAddToCart(e, plant)}
                                         className="bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-600
-                                        flex items-center gap-2"
+                                         flex items-center gap-2 z-10"
                                     >
                                         <ShoppingCart size={18} /> Ajouter
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             ) : (
