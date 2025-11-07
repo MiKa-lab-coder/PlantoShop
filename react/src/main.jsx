@@ -9,6 +9,7 @@ import RegisterPage from './pages/RegisterPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import CartPage from './pages/CartPage.jsx';
 import ShopPage from './pages/ShopPage.jsx';
+import PlantPage from "./pages/PlantPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 import UserPage from "./pages/UserPage.jsx";
 import './index.css';
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
             {
                 path: 'shop', // Si l'URL est '/shop', affiche ShopPage'
                 element: <ShopPage/>,
+            },
+            {
+                path: '/plant/:id', // Si l'URL est '/plant', affiche PlantPage'
+                element: <PlantPage/>,
             },
             {
                 path: '/admin', // Si l'URL est '/admin', affiche AdminPage
