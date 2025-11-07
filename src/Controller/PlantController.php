@@ -36,6 +36,14 @@ class PlantController extends AbstractController
         return $this->json($plants, Response::HTTP_OK, [], ['groups' => 'plant:read']);
     }
 
+    #[Route('/api/plants/by-category/{id}', name: 'api_plants_by_category', methods: ['GET'])]
+    public function byCategory(Category $category): JsonResponse
+    {
+        // Doctrine gère automatiquement la récupération des plantes associées à la catégorie.
+        $plants = $category->getPlants();
+        return $this->json($plants, Response::HTTP_OK, [], ['groups' => 'plant:read']);
+    }
+
     #[Route('/api/plants/{id}', name: 'api_plants_show', methods: ['GET'])]
     public function show(Plant $plant): JsonResponse
     {
