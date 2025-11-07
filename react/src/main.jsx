@@ -9,6 +9,8 @@ import RegisterPage from './pages/RegisterPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import CartPage from './pages/CartPage.jsx';
 import ShopPage from './pages/ShopPage.jsx';
+import AdminPage from "./pages/AdminPage.jsx";
+import UserPage from "./pages/UserPage.jsx";
 import './index.css';
 
 // Creation du ROUTEUR
@@ -41,6 +43,14 @@ const router = createBrowserRouter([
             {
                 path: 'shop', // Si l'URL est '/shop', affiche ShopPage'
                 element: <ShopPage/>,
+            },
+            {
+                path: '/admin', // Si l'URL est '/admin', affiche AdminPage
+                element: <AdminPage/>,
+            },
+            {
+                path: '/user', // Si l'URL est '/user', affiche UserPage
+                element: <UserPage/>,
             }
         ],
     },
