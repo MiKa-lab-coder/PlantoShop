@@ -48,13 +48,10 @@ class Plant
     #[ORM\ManyToMany(targetEntity: Order::class, mappedBy: 'plants')]
     private Collection $orders;
 
-    #[ORM\ManyToMany(targetEntity: Cart::class, mappedBy: 'plants')]
-    private Collection $carts;
 
     public function __construct()
     {
         $this->orders = new ArrayCollection();
-        $this->carts = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -153,28 +150,29 @@ class Plant
         return $this;
     }
 
-    /**
-     * @return Collection<int, Cart>
-     */
-    public function getCarts(): Collection
-    {
-        return $this->carts;
-    }
+    // Suppression des méthodes addCart et removeCart
+    // /**
+    //  * @return Collection<int, Cart>
+    //  */
+    // public function getCarts(): Collection
+    // {
+    //     return $this->carts;
+    // }
 
-    public function addCart(Cart $cart): static
-    {
-        if (!$this->carts->contains($cart)) {
-            $this->carts->add($cart);
-            $cart->addPlant($this);
-        }
-        return $this;
-    }
+    // public function addCart(Cart $cart): static
+    // {
+    //     if (!$this->carts->contains($cart)) {
+    //         $this->carts->add($cart);
+    //         $cart->addPlant($this);
+    //     }
+    //     return $this;
+    // }
 
-    public function removeCart(Cart $cart): static
-    {
-        if ($this->carts->removeElement($cart)) {
-            $cart->removePlant($this);
-        }
-        return $this;
-    }
+    // public function removeCart(Cart $cart): static
+    // {
+    //     if ($this->carts->removeElement($cart)) {
+    //         $cart->removePlant($this);
+    //     }
+    //     return $this;
+    // }
 }
