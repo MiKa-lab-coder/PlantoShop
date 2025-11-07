@@ -20,13 +20,15 @@ class PlantController extends AbstractController
     #[Route('/api/plants', name: 'api_plants_list', methods: ['GET'])]
     public function index(PlantRepository $plantRepository): JsonResponse
     {
-        $plants = $plantRepository->findAll();
+
+        $plants = $plantRepository->findAllWithRelations();
         return $this->json($plants, Response::HTTP_OK, [], ['groups' => 'plant:read']);
     }
 
     #[Route('/api/plants/search/{query}', name: 'api_plants_search', methods: ['GET'])]
     public function search(string $query, PlantRepository $plantRepository): JsonResponse
     {
+
         $plants = $plantRepository->createQueryBuilder('p')
             ->where('p.name LIKE :query')
             ->setParameter('query', '%' . $query . '%')
@@ -59,7 +61,7 @@ class PlantController extends AbstractController
         CategoryRepository $categoryRepository
     ): JsonResponse
     {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $data = json_decode($request->getContent(), true);
         $plant = $serializer->deserialize($request->getContent(), Plant::class, 'json', ['groups' => 'plant:write']);
@@ -102,10 +104,7 @@ class PlantController extends AbstractController
         CategoryRepository $categoryRepository
     ): JsonResponse
     {
-        // Sécurité : Seul le propriétaire ou un admin peut modifier
-        if ($plant->getOwner() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException('You are not the owner of this plant.');
-        }
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $data = json_decode($request->getContent(), true);
         $serializer->deserialize($request->getContent(), Plant::class, 'json', ['object_to_populate' => $plant, 'groups' => 'plant:write']);
@@ -136,10 +135,7 @@ class PlantController extends AbstractController
     #[Route('/api/plants/{id}', name: 'api_plants_delete', methods: ['DELETE'])]
     public function destroy(Plant $plant, EntityManagerInterface $entityManager): JsonResponse
     {
-        // Sécurité : Seul le propriétaire ou un admin peut supprimer
-        if ($plant->getOwner() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException('You are not the owner of this plant.');
-        }
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $entityManager->remove($plant);
         $entityManager->flush();

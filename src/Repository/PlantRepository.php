@@ -16,28 +16,19 @@ class PlantRepository extends ServiceEntityRepository
         parent::__construct($registry, Plant::class);
     }
 
-    //    /**
-    //     * @return Plant[] Returns an array of Plant objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?Plant
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * Récupère toutes les plantes avec leurs relations (Category et Owner)
+     * @return Plant[]
+     */
+    public function findAllWithRelations(): array
+    {
+        return $this->createQueryBuilder('p') // 'p' est un alias pour Plant
+            ->addSelect('c') // On dit à Doctrine de sélectionner aussi les données de la catégorie
+            ->addSelect('o') // Et celles de l'owner (utilisateur)
+            ->leftJoin('p.category', 'c') // On fait la jointure avec la catégorie
+            ->leftJoin('p.owner', 'o') // On fait la jointure avec l'owner
+            ->orderBy('p.name', 'ASC') // On trie par nom pour un affichage cohérent
+            ->getQuery()
+            ->getResult();
+    }
 }
