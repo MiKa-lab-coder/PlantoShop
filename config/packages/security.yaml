@@ -23,17 +23,23 @@ security:
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-        # Firewall principal pour le reste de votre API.
         api:
             pattern: ^/api
             stateless: true
-            # On dit simplement à Symfony d'utiliser l'authentification JWT pour cette zone.
-            # Le tilde (~) signifie "activé avec la configuration par défaut".
             jwt: ~
 
     access_control:
+        # --- Routes Publiques (Pas de connexion requise) ---
+        # L'inscription et la connexion doivent être publiques.
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
+        
+        # La consultation des plantes et des catégories (GET) doit être publique.
+        - { path: ^/api/plants, methods: [GET] }
+        - { path: ^/api/categories, methods: [GET] }
+
+        # --- Routes Protégées (Authentification requise) ---
+        # Toutes les autres routes sous /api nécessitent une connexion.
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
