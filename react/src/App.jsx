@@ -1,28 +1,46 @@
-import { Link, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import Header from './components/Header';
+import Footer from './components/Footer';
 import './App.css';
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Au chargement de l'app, on vérifie si un token existe
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  // Fonction pour gérer la connexion
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+
+  // Fonction pour gérer la déconnexion
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsLoggedIn(false);
+    // Rediriger vers la page d'accueil après la déconnexion
+    window.location.href = '/';
+  };
+
   return (
-    <>
-      <nav>
-        <h1 className="text-2xl text-color-green-600 font-bold mb-4 text-center">PlantoShop</h1>
-        <ul className="flex gap-4">
-          <li>
-            <Link to="/">Accueil</Link>
-          </li>
-          <li>
-            <Link to="/login">Connexion</Link>
-          </li>
-        </ul>
-      </nav>
+    <div className="flex flex-col min-h-screen bg-zinc-100">
+      {/* On passe l'état de connexion et la fonction de déconnexion au Header */}
+      <Header isLoggedIn={isLoggedIn} onLogout={handleLogout} />
 
-      <hr className="my-4" />
-
-      <main>
-        {/* C'est ici que React Router affichera le composant de la page active */}
-        <Outlet />
+      {/* Le contenu principal de la page */}
+      <main className="flex-grow container mx-auto">
+        {/* On passe la fonction de connexion aux composants enfants (LoginPage, etc.) */}
+        <Outlet context={{ handleLogin }} />
       </main>
-    </>
+
+      <Footer />
+    </div>
   );
 }
 
