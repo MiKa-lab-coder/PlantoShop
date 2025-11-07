@@ -1,9 +1,10 @@
-import {useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {Search} from 'lucide-react';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Search } from 'lucide-react';
 
-function SearchBar () {
-    // État initial
+function SearchBar() {
+
+    // Etat initial du formulaire
     const [searchQuery, setSearchQuery] = useState('');
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -11,7 +12,7 @@ function SearchBar () {
     // Fonction de navigation
     const navigate = useNavigate();
 
-    // Fonction de soumission de la recherche
+    // Fonction de recherche
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (!searchQuery.trim()) return;
@@ -20,43 +21,43 @@ function SearchBar () {
         setError(null);
 
         try {
-            // On lance les deux recherches en parallèle
-            const [plantResponse, categoryResponse] = await Promise.all([
-                fetch(`http://localhost/api/plants/search/${searchQuery}`),
-                fetch(`http://localhost/api/categories/search/${searchQuery}`)
-            ]);
+            // Rechercher des plantes par leur nom
+            const plantResponse = await fetch(`http://localhost/api/plants/search/${searchQuery}`);
+            const plantsData = await plantResponse.json();
 
-            const plantData = await plantResponse.json();
-            const categoryData = await categoryResponse.json();
+            let finalResults = plantsData;
 
-            // On fusionne les résultats
-            const searchResults = {
-                plants: plantData,
-                categories: categoryData
-            };
+            // Si aucune plante n'est trouvée, rechercher par catégorie
+            if (plantsData.length === 0) {
+                const categoryResponse = await fetch(`http://localhost/api/categories/search/${searchQuery}`);
+                const categoriesData = await categoryResponse.json();
 
-            // Si l'une des requêtes fonctionne, on stock le resultat de la recherche dans le localStorage
-            // et on redirige vers la page de résultat de recherche (ShopPage.jsx)
-            if (plantData.length > 0 || categoryData.length > 0) {
-                localStorage.setItem('searchResults', JSON.stringify(searchResults));
-                navigate('/shop');
-            } else {
-                // Sinon, on affiche un message d'erreur
-                setError("Aucun résultat trouvé.");
+                // Simplification pour ne prendre que le premier résultat et éviter des mélanges de catégorie et de plante
+                // Ex: la recherche plante donnerait : plante d'intérieur / extérieur / grasse
+                if (categoriesData.length > 0) {
+                    const firstCategoryId = categoriesData[0].id;
+                    const plantsByCategoryResponse =
+                        await fetch(`http://localhost/api/plants/by-category/${firstCategoryId}`);
+                    finalResults = await plantsByCategoryResponse.json();
+                }
             }
+
+            // Si aucune plante n'est trouvée, stocker les résultats (même vides) et navigation vers la page produit
+            localStorage.setItem('searchResults', JSON.stringify(finalResults));
+            navigate('/shop');
 
         } catch (err) {
             setError(err.message);
-            //console.error('Erreur de recherche:', err);
+            console.error('Erreur de recherche:', err);
         } finally {
             setIsLoading(false);
         }
-    }
+    };
 
     return (
         <div className="w-full max-w-md mx-auto">
             <form onSubmit={handleSubmit} className="relative">
-                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="text-slate-400" size={20} />
                 </div>
                 {/* Champ de recherche */}
@@ -69,10 +70,10 @@ function SearchBar () {
                      focus:ring-green-500 focus:border-green-500"
                     disabled={isLoading}
                 />
-                {/* Bouton de recherche stylisé */}
+                {/* Bouton de recherche */}
                 <button type="submit" disabled={isLoading} className="absolute inset-y-0 right-0 px-4 flex items-center
                  bg-green-700 text-white rounded-r-md hover:bg-green-600 disabled:bg-green-400">
-                    {isLoading ? '...' : <Search size={20}/>}
+                    {isLoading ? '...' : <Search size={20} />}
                 </button>
             </form>
             {error && <p className="text-red-600 text-sm text-center mt-2">{error}</p>}
