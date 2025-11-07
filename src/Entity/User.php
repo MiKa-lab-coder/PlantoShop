@@ -10,72 +10,60 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: 'user')]
-#[UniqueEntity(fields: ['email'], message: 'Cette adresse email est déjà utilisée.')]
+#[ORM\Table(name: '`user`')]
+#[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['user:read', 'order:read', 'plant:read', 'cart:read'])]
+    #[Groups(['user:read', 'plant:read', 'order:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
-    #[Groups(['user:read', 'user:write'])]
-    #[Assert\NotBlank(message: "L'email ne peut pas être vide.")]
-    #[Assert\Email(message: "L\'adresse email '{{ value }}' n\'est pas une adresse valide.")]
+    #[Groups(['user:read', 'user:write', 'plant:read', 'order:read'])]
     private ?string $email = null;
 
-    #[ORM\Column(length: 50)]
-    #[Groups(['user:read', 'user:write'])]
-    #[Assert\NotBlank(message: "Le prénom ne peut pas être vide.")]
-    private ?string $firstName = null;
-
-    #[ORM\Column(length: 50)]
-    #[Groups(['user:read', 'user:write'])]
-    #[Assert\NotBlank(message: "Le nom ne peut pas être vide.")]
-    private ?string $lastName = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:read', 'user:write'])]
-    private ?string $address = null;
-
-    #[ORM\Column(length: 20, nullable: true)]
-    #[Groups(['user:read', 'user:write'])]
-    private ?string $phoneNumber = null;
-
     #[ORM\Column]
-    #[Groups(['user:read', 'admin:write'])]
+    #[Groups(['user:read', 'user:write', 'plant:read', 'order:read'])]
     private array $roles = [];
 
     /**
      * @var string The hashed password
      */
     #[ORM\Column]
-    #[Groups(['user:write'])] // Le mot de passe ne doit JAMAIS être lu
-    #[Assert\NotBlank(message: "Le mot de passe ne peut pas être vide.")]
-    #[Assert\Length(min: 8, minMessage: "Votre mot de passe doit faire au moins {{ limit }} caractères.")]
     private ?string $password = null;
 
-    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Order::class, orphanRemoval: true)]
-    private Collection $orders;
+    #[ORM\Column(length: 255)]
+    #[Groups(['user:read', 'user:write', 'plant:read', 'order:read'])]
+    private ?string $firstName = null;
 
-    #[ORM\OneToMany(mappedBy: 'owner', targetEntity: Plant::class, orphanRemoval: true)]
+    #[ORM\Column(length: 255)]
+    #[Groups(['user:read', 'user:write', 'plant:read', 'order:read'])]
+    private ?string $lastName = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'order:read'])]
+    private ?string $address = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    #[Groups(['user:read', 'user:write', 'order:read'])]
+    private ?string $phoneNumber = null;
+
+    #[ORM\OneToMany(mappedBy: 'owner', targetEntity: Plant::class)]
     private Collection $plants;
 
-    #[ORM\OneToOne(mappedBy: 'owner', cascade: ['persist', 'remove'])]
-    private ?Cart $cart = null;
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Order::class)]
+    private Collection $orders;
 
 
     public function __construct()
     {
-        $this->orders = new ArrayCollection();
         $this->plants = new ArrayCollection();
+        $this->orders = new ArrayCollection();
     }
-
 
     public function getId(): ?int
     {
@@ -92,6 +80,59 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->email = $email;
 
         return $this;
+    }
+
+    /**
+     * A visual identifier that represents this user.
+     *
+     * @see UserInterface
+     */
+    public function getUserIdentifier(): string
+    {
+        return (string) $this->email;
+    }
+
+    /**
+     * @see UserInterface
+     */
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        // guarantee every user at least has ROLE_USER
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): static
+    {
+        $this->roles = $roles;
+
+        return $this;
+    }
+
+    /**
+     * @see PasswordAuthenticatedUserInterface
+     */
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): static
+    {
+        $this->password = $password;
+
+        return $this;
+    }
+
+    /**
+     * @see UserInterface
+     */
+    public function eraseCredentials(): void
+    {
+        // If you store any temporary, sensitive data on the user, clear it here
+        // $this->plainPassword = null;
     }
 
     public function getFirstName(): ?string
@@ -142,32 +183,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getOrders(): Collection
-    {
-        return $this->orders;
-    }
-
-    public function addOrder(Order $order): static
-    {
-        if (!$this->orders->contains($order)) {
-            $this->orders->add($order);
-            $order->setClient($this);
-        }
-
-        return $this;
-    }
-
-    public function removeOrder(Order $order): static
-    {
-        if ($this->orders->removeElement($order)) {
-            if ($order->getClient() === $this) {
-                $order->setClient(null);
-            }
-        }
-
-        return $this;
-    }
-
+    /**
+     * @return Collection<int, Plant>
+     */
     public function getPlants(): Collection
     {
         return $this->plants;
@@ -186,6 +204,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removePlant(Plant $plant): static
     {
         if ($this->plants->removeElement($plant)) {
+            // set the owning side to null (unless already changed)
             if ($plant->getOwner() === $this) {
                 $plant->setOwner(null);
             }
@@ -194,55 +213,55 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getCart(): ?Cart
+    /**
+     * @return Collection<int, Order>
+     */
+    public function getOrders(): Collection
     {
-        return $this->cart;
+        return $this->orders;
     }
 
-    public function setCart(Cart $cart): static
+    public function addOrder(Order $order): static
     {
-        if ($cart->getOwner() !== $this) {
-            $cart->setOwner($this);
+        if (!$this->orders->contains($order)) {
+            $this->orders->add($order);
+            $order->setClient($this);
         }
 
-        $this->cart = $cart;
+        return $this;
+    }
+
+    public function removeOrder(Order $order): static
+    {
+        if ($this->orders->removeElement($order)) {
+            // set the owning side to null (unless already changed)
+            if ($order->getClient() === $this) {
+                $order->setClient(null);
+            }
+        }
 
         return $this;
     }
 
-    public function getUserIdentifier(): string
-    {
-        return (string) $this->email;
-    }
+    // Suppression des méthodes getCart et setCart
+    // public function getCart(): ?Cart
+    // {
+    //     return $this->cart;
+    // }
 
-    public function getRoles(): array
-    {
-        $roles = $this->roles;
-        $roles[] = 'ROLE_USER';
+    // public function setCart(?Cart $cart): static
+    // {
+    //     // unset the owning side of the relation if necessary
+    //     if ($cart === null && $this->cart !== null) {
+    //         $this->cart->setOwner(null);
+    //     }
+    //     // set the owning side of the relation if necessary
+    //     if ($cart !== null && $cart->getOwner() !== $this) {
+    //         $cart->setOwner($this);
+    //     }
 
-        return array_unique($roles);
-    }
+    //     $this->cart = $cart;
 
-    public function setRoles(array $roles): static
-    {
-        $this->roles = $roles;
-
-        return $this;
-    }
-
-    public function getPassword(): ?string
-    {
-        return $this->password;
-    }
-
-    public function setPassword(string $password): static
-    {
-        $this->password = $password;
-
-        return $this;
-    }
-
-    public function eraseCredentials(): void
-    {
-    }
+    //     return $this;
+    // }
 }
