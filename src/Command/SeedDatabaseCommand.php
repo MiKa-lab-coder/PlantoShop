@@ -2,12 +2,13 @@
 
 namespace App\Command;
 
+use App\Document\Review;
 use App\Entity\Category;
 use App\Entity\Order;
 use App\Entity\OrderDetails;
 use App\Entity\Plant;
 use App\Entity\User;
-use Doctrine\DBAL\Exception;
+use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -23,18 +24,18 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 class SeedDatabaseCommand extends Command
 {
     private EntityManagerInterface $entityManager;
+    private DocumentManager $documentManager;
     private UserPasswordHasherInterface $passwordHasher;
 
-    public function __construct(EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher)
+    public function __construct(EntityManagerInterface $entityManager, DocumentManager $documentManager,
+                                UserPasswordHasherInterface $passwordHasher)
     {
         parent::__construct();
         $this->entityManager = $entityManager;
+        $this->documentManager = $documentManager;
         $this->passwordHasher = $passwordHasher;
     }
 
-    /**
-     * @throws Exception
-     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
@@ -43,13 +44,9 @@ class SeedDatabaseCommand extends Command
         $this->truncateAllTables($io);
 
         $io->section('Creating Categories...');
-        // Données des catégories pour tests
         $categoryNames = [
-            'Plantes d\'intérieur' => 'int',
-            'Plantes d\'extérieur' => 'ext',
-            'Fleurs' => 'fleur',
-            'Plantes grasses' => 'grass',
-            'Plantes aromatiques' => 'arom',
+            'Plantes d\'intérieur' => 'int', 'Plantes d\'extérieur' => 'ext', 'Fleurs' => 'fleur',
+            'Plantes grasses' => 'grass', 'Plantes aromatiques' => 'arom',
         ];
         $categories = [];
         foreach ($categoryNames as $name => $prefix) {
@@ -62,30 +59,24 @@ class SeedDatabaseCommand extends Command
         $io->info(count($categories) . ' categories created.');
 
         $io->section('Creating Users...');
-        // Données des utilisateurs pour tests
         $users = [];
         $admin = new User();
-        $admin->setEmail('admin@plantoshop.com');
-        $admin->setFirstName('Admin');
-        $admin->setLastName('User');
-        $admin->setRoles(['ROLE_ADMIN']);
-        $admin->setPassword($this->passwordHasher->hashPassword($admin, 'adminpass'));
+        $admin->setEmail('admin@plantoshop.com')->setFirstName('Admin')
+            ->setLastName('User')->setRoles(['ROLE_ADMIN'])
+            ->setPassword($this->passwordHasher->hashPassword($admin, 'adminpass'));
         $this->entityManager->persist($admin);
         $users[] = $admin;
 
         $user = new User();
-        $user->setEmail('user@plantoshop.com');
-        $user->setFirstName('Regular');
-        $user->setLastName('User');
-        $user->setAddress('123 Green St, Plant City');
-        $user->setPassword($this->passwordHasher->hashPassword($user, 'userpass'));
+        $user->setEmail('user@plantoshop.com')->setFirstName('Regular')
+            ->setLastName('User')->setAddress('123 Green St, Plant City')
+            ->setPassword($this->passwordHasher->hashPassword($user, 'userpass'));
         $this->entityManager->persist($user);
         $users[] = $user;
         $this->entityManager->flush();
         $io->info(count($users) . ' users created.');
 
         $io->section('Creating Plants...');
-        // Données des plantes pour tests
         $plantData = [
             ['name' => 'Monstera Deliciosa', 'cat' => 'int', 'img' => 'int1.png', 'price' => 25],
             ['name' => 'Ficus Lyrata', 'cat' => 'int', 'img' => 'int2.png', 'price' => 35],
@@ -103,27 +94,23 @@ class SeedDatabaseCommand extends Command
             ['name' => 'Menthe Poivrée', 'cat' => 'arom', 'img' => 'arom2.jpg', 'price' => 6],
             ['name' => 'Romarin Officinal', 'cat' => 'arom', 'img' => 'arom3.jpg', 'price' => 9],
         ];
-
-        // Création des plantes
         $plants = [];
         foreach ($plantData as $data) {
             $plant = new Plant();
-            $plant->setName($data['name']);
-            $plant->setDescription('Une magnifique ' . $data['name'] . ' pour embellir votre quotidien.');
-            $plant->setPrice($data['price']);
-            $plant->setCategory($categories[$data['cat']]);
-            $plant->setImageUrl('/src/assets/img/' . $data['img']);
-            $plant->setOwner($admin);
+            $plant->setName($data['name'])
+                  ->setDescription('Une magnifique ' . $data['name'] .' pour embellir votre quotidien.')
+                  ->setPrice($data['price'])
+                  ->setCategory($categories[$data['cat']])
+                  ->setImageUrl('/src/assets/img/' . $data['img'])
+                  ->setOwner($admin);
             $this->entityManager->persist($plant);
             $plants[] = $plant;
         }
-        // Enregistrement des plantes dans la base de données
         $this->entityManager->flush();
         $io->info(count($plants) . ' plants created.');
 
         $io->section('Creating Orders and OrderDetails...');
         foreach ($users as $currentUser) {
-            // Créer une commande directement pour chaque utilisateur
             $order = new Order();
             $order->setClient($currentUser);
             
@@ -134,58 +121,58 @@ class SeedDatabaseCommand extends Command
             foreach ($randomPlants as $plantIndex) {
                 $plantToAdd = $plants[$plantIndex];
                 $quantity = rand(1, 3);
-                
                 $order->addPlant($plantToAdd);
-                
                 $totalPrice += $plantToAdd->getPrice() * $quantity;
-                $plantSummary[] = [
-                    'name' => $plantToAdd->getName(),
-                    'quantity' => $quantity,
-                    'price' => $plantToAdd->getPrice(),
-                ];
+                $plantSummary[] = ['name' => $plantToAdd->getName(), 'quantity' => $quantity,
+                                    'price' => $plantToAdd->getPrice()];
             }
             $this->entityManager->persist($order);
 
-            // Créer les détails de la commande
             $orderDetails = new OrderDetails();
-
-            // On récupère la commande créée
-            $orderDetails->setTheOrder($order);
-
-            // On set les détails de la commande
-            $orderDetails->setClientFirstName($currentUser->getFirstName());
-            $orderDetails->setClientLastName($currentUser->getLastName());
-            $orderDetails->setClientEmail($currentUser->getEmail());
-            $orderDetails->setClientAddress($currentUser->getAddress());
-            $orderDetails->setClientPhoneNumber($currentUser->getPhoneNumber());
-            $orderDetails->setOrderDate(new \DateTimeImmutable());
-            $orderDetails->setTotalPrice((string)$totalPrice);
-
-            // On récupère le contenu du panier
-            $orderDetails->setPlantSummary($plantSummary);
+            $orderDetails->setTheOrder($order)->setClientFirstName($currentUser->getFirstName())
+                         ->setClientLastName($currentUser->getLastName())->setClientEmail($currentUser->getEmail())
+                         ->setClientAddress($currentUser->getAddress())->setClientPhoneNumber($currentUser->getPhoneNumber())
+                         ->setTotalPrice((string)$totalPrice)->setPlantSummary($plantSummary);
             $this->entityManager->persist($orderDetails);
-
-            $io->text('Created order and details for ' . $currentUser->getEmail());
         }
-
         $this->entityManager->flush();
         $io->info('Orders and OrderDetails created.');
 
-        $io->success('Database seeding complete!');
+        $io->section('Creating Reviews...');
+        $reviewComments = [
+            'Absolument magnifique, je recommande !', 'Très facile d\'entretien, parfaite pour les débutants.',
+            'Arrivée en parfait état, très bien emballée.', 'Un peu plus petite que ce que j\'imaginais, mais très jolie.',
+            'Les couleurs sont superbes, je suis ravi(e) !', 'Tout simplement Superbe', 'Magnifique !!!',
+            'J\'en ai acheté une seconde pour ma soeur', ''
+        ];
+        
+        if ($user) {
+            for ($i = 0; $i < 5; $i++) {
+                $review = new Review();
+                $randomPlant = $plants[array_rand($plants)];
+                $review->setPlantId($randomPlant->getId())->setUserId($user->getId())->setUsername($user->getFirstName())
+                       ->setRating(rand(4, 5))->setComment($reviewComments[array_rand($reviewComments)]);
+                $this->documentManager->persist($review);
+            }
+            $this->documentManager->flush();
+            $io->info('5 reviews created.');
+        }
 
+        $io->success('Database seeding complete!');
         return Command::SUCCESS;
     }
 
-    /**
-     * @throws Exception
-     */
     private function truncateAllTables(SymfonyStyle $io): void
     {
         $connection = $this->entityManager->getConnection();
-        $io->info('Truncating all tables (PostgreSQL method)...');
-
-        // Suppression des données existantes dans les tables
+        $io->info('Truncating SQL tables (PostgreSQL method)...');
         $connection->executeStatement('TRUNCATE TABLE "order_details", "order_plant", "order", "plant", "category",
          "user" RESTART IDENTITY CASCADE');
+        
+        $io->info('Dropping reviews collection (MongoDB)...');
+        $collections = $this->documentManager->getSchemaManager()->listCollections();
+        foreach ($collections as $collection) {
+            $this->documentManager->getSchemaManager()->dropCollection($collection->getName());
+        }
     }
 }
