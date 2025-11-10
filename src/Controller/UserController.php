@@ -29,7 +29,6 @@ class UserController extends AbstractController
     public function index(UserRepository $userRepository): JsonResponse
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
-
         $users = $userRepository->findAll();
         return $this->json($users, Response::HTTP_OK, [], ['groups' => 'user:read']);
     }
@@ -37,13 +36,12 @@ class UserController extends AbstractController
     #[Route('/api/users/{id}', name: 'api_users_show', methods: ['GET'])]
     public function show(User $user): JsonResponse
     {
-        // L'utilisateur doit être le propriétaire du profil OU un admin.
-        $this->denyAccessUnlessGranted('view', $user);
-
+        if ($user !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé.'], Response::HTTP_FORBIDDEN);
+        }
         return $this->json($user, Response::HTTP_OK, [], ['groups' => 'user:read']);
     }
 
-    // Endpoint d'inscription (public)
     #[Route('/api/register', name: 'api_register', methods: ['POST'])]
     public function create(
         Request $request,
@@ -52,8 +50,8 @@ class UserController extends AbstractController
         ValidatorInterface $validator,
         UserPasswordHasherInterface $passwordHasher
     ): JsonResponse {
-        $user = $serializer->deserialize($request->getContent(), User::class, 'json', ['groups' => 'user:write']);
-
+        $user = $serializer->deserialize($request->getContent(), User::class, 'json',
+            ['groups' => 'user:write']);
         $hashedPassword = $passwordHasher->hashPassword($user, $user->getPassword());
         $user->setPassword($hashedPassword);
         $user->setRoles(['ROLE_USER']);
@@ -69,7 +67,6 @@ class UserController extends AbstractController
 
         $entityManager->persist($user);
         $entityManager->flush();
-
         return $this->json($user, Response::HTTP_CREATED, [], ['groups' => 'user:read']);
     }
 
@@ -82,18 +79,17 @@ class UserController extends AbstractController
         ValidatorInterface $validator,
         UserPasswordHasherInterface $passwordHasher
     ): JsonResponse {
-        // L'utilisateur doit être le propriétaire du profil qu'il essaie de modifier.
-        $this->denyAccessUnlessGranted('edit', $user);
+        if ($user !== $this->getUser()) {
+            return $this->json(['message' => 'Accès refusé.'], Response::HTTP_FORBIDDEN);
+        }
 
         $serializer->deserialize($request->getContent(), User::class, 'json',
             ['object_to_populate' => $user, 'groups' => 'user:write']);
-
         $data = json_decode($request->getContent(), true);
         if (isset($data['password'])) {
             $hashedPassword = $passwordHasher->hashPassword($user, $data['password']);
             $user->setPassword($hashedPassword);
         }
-
         $user->setRoles($this->getUser()->getRoles());
 
         $errors = $validator->validate($user);
@@ -106,19 +102,18 @@ class UserController extends AbstractController
         }
 
         $entityManager->flush();
-
         return $this->json($user, Response::HTTP_OK, [], ['groups' => 'user:read']);
     }
 
     #[Route('/api/users/{id}', name: 'api_users_delete', methods: ['DELETE'])]
     public function destroy(User $user, EntityManagerInterface $entityManager): JsonResponse
     {
-        // L'utilisateur doit être le propriétaire du profil OU un admin.
-        $this->denyAccessUnlessGranted('delete', $user);
+        if ($user !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
+            return $this->json(['message' => 'Accès refusé.'], Response::HTTP_FORBIDDEN);
+        }
 
         $entityManager->remove($user);
         $entityManager->flush();
-
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 }
