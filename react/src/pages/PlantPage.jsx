@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Undo2 } from 'lucide-react';
+import ReviewCarousel from '../components/ReviewCarousel';
 
 function PlantPage() {
-    const { id } = useParams(); // Récupérer l'ID de la plante depuis l'URL
+    const { id } = useParams();
     const [plant, setPlant] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -12,20 +13,17 @@ function PlantPage() {
     useEffect(() => {
         const fetchPlant = async () => {
             try {
-                // Récupérer la plante depuis le localStorage
                 const selectedPlantJSON = localStorage.getItem('selectedPlant');
                 if (selectedPlantJSON) {
                     const selectedPlant = JSON.parse(selectedPlantJSON);
-                    // S'assurer que la plante stockée correspond à l'ID de l'URL
                     if (selectedPlant.id === Number(id)) {
                         setPlant(selectedPlant);
-                        localStorage.removeItem('selectedPlant'); // Nettoyer après utilisation
+                        localStorage.removeItem('selectedPlant');
                         setIsLoading(false);
-                        return; // On a trouvé la plante, pas besoin de fetch
+                        return;
                     }
                 }
 
-                // Si la plante n'est pas dans le localStorage, on la fetch
                 const response = await fetch(`http://localhost/api/plants/${id}`);
                 if (!response.ok) {
                     throw new Error('Impossible de récupérer les détails de la plante.');
@@ -41,7 +39,7 @@ function PlantPage() {
         };
 
         fetchPlant();
-    }, [id]); // Le useEffect se redéclenche si l'ID dans l'URL change
+    }, [id]);
 
     const handleAddToCart = (plantToAdd) => {
         const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -60,20 +58,16 @@ function PlantPage() {
         alert(`${plantToAdd.name} a été ajouté au panier !`);
     };
 
-    // Fonction pour gérer le retour en arrière
     const handleGoBack = () => {
-        navigate(-1); // Revient à la page précédente dans l'historique
+        navigate(-1);
     };
 
-    // Affichage des erreurs
     if (isLoading) return <div className="text-center p-8">Chargement de la plante...</div>;
     if (error) return <div className="text-center p-8 text-red-600">Erreur: {error}</div>;
     if (!plant) return <div className="text-center p-8">Plante non trouvée.</div>;
 
-    // Affichage de la plante
     return (
         <div className="container mx-auto p-8">
-            {/* Bouton de retour en arrière */}
             <button 
                 onClick={handleGoBack} 
                 className="flex items-center gap-2 text-slate-600 hover:text-green-700 mb-6 px-4 py-2 rounded-md
@@ -83,13 +77,10 @@ function PlantPage() {
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Colonne de l'image */}
                 <div>
                     <img src={plant.imageUrl || 'https://via.placeholder.com/400'} alt={plant.name} className="w-full
                      h-auto object-cover rounded-lg shadow-lg" />
                 </div>
-
-                {/* Colonne des détails */}
                 <div className="flex flex-col justify-center">
                     <h2 className="text-4xl font-bold text-green-700 mb-4">{plant.name}</h2>
                     <p className="text-slate-600 mb-6 text-lg">{plant.description}</p>
@@ -98,13 +89,18 @@ function PlantPage() {
                         <span className="text-3xl font-bold text-green-700">{plant.price.toFixed(2)} €</span>
                         <button
                             onClick={() => handleAddToCart(plant)}
-                            className="bg-green-700 text-white px-6 py-3 rounded-md hover:bg-green-600 flex
+                            className="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 flex
                              items-center gap-2 text-lg"
                         >
                             <ShoppingCart size={22} /> Ajouter au panier
                         </button>
                     </div>
                 </div>
+            </div>
+
+            {/* Carrousel d'avis */}
+            <div className="mt-12 border-t pt-8">
+                <ReviewCarousel plantId={plant.id} />
             </div>
         </div>
     );
