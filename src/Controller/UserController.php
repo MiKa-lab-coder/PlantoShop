@@ -16,6 +16,15 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class UserController extends AbstractController
 {
+    // Route pour que l'utilisateur connecté récupère son propre profil
+    #[Route('/api/user/profile', name: 'api_user_profile', methods: ['GET'])]
+    public function profile(): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $user = $this->getUser();
+        return $this->json($user, 200, [], ['groups' => 'user:read']);
+    }
+
     #[Route('/api/users', name: 'api_users_list', methods: ['GET'])]
     public function index(UserRepository $userRepository): JsonResponse
     {
@@ -28,16 +37,14 @@ class UserController extends AbstractController
     #[Route('/api/users/{id}', name: 'api_users_show', methods: ['GET'])]
     public function show(User $user): JsonResponse
     {
-        // Un utilisateur ne peut voir que son propre profil, sauf si c'est un admin
-        if ($user !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException();
-        }
+        // L'utilisateur doit être le propriétaire du profil OU un admin.
+        $this->denyAccessUnlessGranted('view', $user);
 
         return $this->json($user, Response::HTTP_OK, [], ['groups' => 'user:read']);
     }
 
     // Endpoint d'inscription (public)
-    #[Route('/api/users', name: 'api_users_create', methods: ['POST'])]
+    #[Route('/api/register', name: 'api_register', methods: ['POST'])]
     public function create(
         Request $request,
         SerializerInterface $serializer,
@@ -47,11 +54,8 @@ class UserController extends AbstractController
     ): JsonResponse {
         $user = $serializer->deserialize($request->getContent(), User::class, 'json', ['groups' => 'user:write']);
 
-        // Hachage du mot de passe
         $hashedPassword = $passwordHasher->hashPassword($user, $user->getPassword());
         $user->setPassword($hashedPassword);
-
-        // Sécurité : On s'assure que le rôle est bien ["ROLE_USER"]
         $user->setRoles(['ROLE_USER']);
 
         $errors = $validator->validate($user);
@@ -78,21 +82,18 @@ class UserController extends AbstractController
         ValidatorInterface $validator,
         UserPasswordHasherInterface $passwordHasher
     ): JsonResponse {
-        // Un utilisateur ne peut modifier que son propre profil
-        if ($user !== $this->getUser()) {
-            throw $this->createAccessDeniedException();
-        }
+        // L'utilisateur doit être le propriétaire du profil qu'il essaie de modifier.
+        $this->denyAccessUnlessGranted('edit', $user);
 
-        $serializer->deserialize($request->getContent(), User::class, 'json', ['object_to_populate' => $user, 'groups' => 'user:write']);
+        $serializer->deserialize($request->getContent(), User::class, 'json',
+            ['object_to_populate' => $user, 'groups' => 'user:write']);
 
-        // Si un nouveau mot de passe est fourni, on le hache
         $data = json_decode($request->getContent(), true);
         if (isset($data['password'])) {
             $hashedPassword = $passwordHasher->hashPassword($user, $data['password']);
             $user->setPassword($hashedPassword);
         }
 
-        // Sécurité : Empêcher un utilisateur de changer ses propres rôles
         $user->setRoles($this->getUser()->getRoles());
 
         $errors = $validator->validate($user);
@@ -112,10 +113,8 @@ class UserController extends AbstractController
     #[Route('/api/users/{id}', name: 'api_users_delete', methods: ['DELETE'])]
     public function destroy(User $user, EntityManagerInterface $entityManager): JsonResponse
     {
-        // Un utilisateur ne peut supprimer que son propre compte, sauf si c'est un admin
-        if ($user !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
-            throw $this->createAccessDeniedException();
-        }
+        // L'utilisateur doit être le propriétaire du profil OU un admin.
+        $this->denyAccessUnlessGranted('delete', $user);
 
         $entityManager->remove($user);
         $entityManager->flush();
