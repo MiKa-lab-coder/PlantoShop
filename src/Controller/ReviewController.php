@@ -21,12 +21,13 @@ class ReviewController extends AbstractController
     #[Route('/plants/{plantId}/reviews', name: 'api_reviews_list_for_plant', methods: ['GET'])]
     public function listForPlant(int $plantId, ReviewRepository $reviewRepository): JsonResponse
     {
-        $reviews = $reviewRepository->findByPlantId($plantId);
+        $reviews = $reviewRepository->findBy(['plantId' => $plantId], ['createdAt' => 'DESC']);
         return $this->json($reviews, Response::HTTP_OK, [], ['groups' => 'review:read']);
     }
 
-    #[Route('/reviews', name: 'api_reviews_create', methods: ['POST'])]
+    #[Route('/plants/{plantId}/reviews', name: 'api_reviews_create_for_plant', methods: ['POST'])]
     public function create(
+        int $plantId,
         Request $request,
         SerializerInterface $serializer,
         DocumentManager $documentManager,
@@ -37,33 +38,34 @@ class ReviewController extends AbstractController
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         $user = $this->getUser();
 
-        /** @var Review $review */
-        $review = $serializer->deserialize($request->getContent(), Review::class, 'json',
-            ['groups' => 'review:write']);
-
-        $plant = $plantRepository->find($review->getPlantId());
+        $plant = $plantRepository->find($plantId);
         if (!$plant) {
             return $this->json(['error' => 'Plant not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        // Verification de la commande
+        // Vérification si l'utilisateur a bien commandé cette plante
         $hasOrderedPlant = false;
         /** @var Order $order */
         foreach ($user->getOrders() as $order) {
-            if ($order->getCart() && $order->getCart()->getPlants()->contains($plant)) {
+            // Nouvelle logique de vérification
+            if ($order->getPlants()->contains($plant)) {
                 $hasOrderedPlant = true;
                 break;
             }
         }
 
         if (!$hasOrderedPlant) {
-            return $this->json(['error' => 'You can only review plants you have purchased.'],
+            return $this->json(['error' => 'Vous ne pouvez laisser un avis que pour les plantes que vous avez achetées.'],
                 Response::HTTP_FORBIDDEN);
         }
 
+        /** @var Review $review */
+        $review = $serializer->deserialize($request->getContent(), Review::class, 'json',
+            ['groups' => 'review:write']);
+        
         $review->setUserId($user->getId());
         $review->setUsername($user->getFirstName());
-        $review->setPlantId($plant->getId()); // Assure que l'ID est correct
+        $review->setPlantId($plant->getId());
 
         $errors = $validator->validate($review);
         if (count($errors) > 0) {
