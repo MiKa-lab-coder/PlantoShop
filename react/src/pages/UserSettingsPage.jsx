@@ -116,7 +116,7 @@ function UserSettingsPage() {
         }
     };
 
-    if (isLoading) return <p>Chargement...</p>;
+    if (isLoading) return <div className="text-center p-8">Chargement...</div>;
     if (error) return <p className="text-red-500">{error}</p>;
 
     return (
