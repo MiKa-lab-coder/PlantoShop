@@ -2,6 +2,7 @@
 
 namespace App\EventSubscriber;
 
+use App\Entity\User;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\JWTCreatedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -15,11 +16,19 @@ class JwtCreatedSubscriber implements EventSubscriberInterface
         // Récupérer l'utilisateur à partir de l'événement
         $user = $event->getUser();
 
+        // S'assurer que l'utilisateur est bien une instance de notre entité User
+        if (!$user instanceof User) {
+            return;
+        }
+
         // Récupérer le payload (les données du jeton)
         $payload = $event->getData();
 
         // Ajouter les rôles de l'utilisateur au payload
         $payload['roles'] = $user->getRoles();
+        
+        // Ajouter d'autres informations si nécessaire
+        $payload['id'] = $user->getId();
 
         // Mettre à jour le payload de l'événement
         $event->setData($payload);
