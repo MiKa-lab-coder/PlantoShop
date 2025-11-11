@@ -9,18 +9,17 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
-
 #[ORM\Entity(repositoryClass: PlantRepository::class)]
 class Plant
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['plant:read', 'order:read', 'cart:read'])]
+    #[Groups(['plant:read', 'order:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['plant:read', 'plant:write'])]
+    #[Groups(['plant:read', 'plant:write', 'order:read'])]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT)]
@@ -28,11 +27,11 @@ class Plant
     private ?string $description = null;
 
     #[ORM\Column]
-    #[Groups(['plant:read', 'plant:write'])]
+    #[Groups(['plant:read', 'plant:write', 'order:read'])]
     private ?int $price = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['plant:read', 'plant:write'])]
+    #[Groups(['plant:read', 'plant:write', 'order:read'])]
     private ?string $imageUrl = null;
 
     #[ORM\ManyToOne(inversedBy: 'plants')]
@@ -47,7 +46,6 @@ class Plant
 
     #[ORM\ManyToMany(targetEntity: Order::class, mappedBy: 'plants')]
     private Collection $orders;
-
 
     public function __construct()
     {
@@ -149,30 +147,4 @@ class Plant
         }
         return $this;
     }
-
-    // Suppression des méthodes addCart et removeCart
-    // /**
-    //  * @return Collection<int, Cart>
-    //  */
-    // public function getCarts(): Collection
-    // {
-    //     return $this->carts;
-    // }
-
-    // public function addCart(Cart $cart): static
-    // {
-    //     if (!$this->carts->contains($cart)) {
-    //         $this->carts->add($cart);
-    //         $cart->addPlant($this);
-    //     }
-    //     return $this;
-    // }
-
-    // public function removeCart(Cart $cart): static
-    // {
-    //     if ($this->carts->removeElement($cart)) {
-    //         $cart->removePlant($this);
-    //     }
-    //     return $this;
-    // }
 }
