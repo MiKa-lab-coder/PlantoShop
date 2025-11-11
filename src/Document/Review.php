@@ -2,63 +2,56 @@
 
 namespace App\Document;
 
+use App\Repository\ReviewRepository; // Assurez-vous que ce repository existe et est correct
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
 
-/**
- * @ODM\Document(repositoryClass=App\Repository\ReviewRepository::class)
- */
+#[ODM\Document(repositoryClass: ReviewRepository::class)]
 class Review
 {
-    /**
-     * @ODM\Id(strategy="AUTO")
-     * @Groups({"review:read"})
-     */
+    #[ODM\Id(strategy: "AUTO")]
+    #[Groups(['review:read'])]
     private ?string $id = null;
 
     /**
      * L'ID de la plante dans la base de données SQL.
-     * @ODM\Field(type="int")
-     * @Groups({"review:read", "review:write"})
-     * @Assert\NotBlank
      */
+    #[ODM\Field(type: "int")]
+    #[Groups(['review:read', 'review:write'])]
+    #[Assert\NotBlank]
     private ?int $plantId = null;
 
     /**
      * L'ID de l'utilisateur qui a posté l'avis.
-     * @ODM\Field(type="int")
-     * @Groups({"review:read"})
      */
+    #[ODM\Field(type: "int")]
+    #[Groups(['review:read'])]
     private ?int $userId = null;
 
     /**
      * Le nom de l'utilisateur, stocké pour éviter des requêtes complexes.
-     * @ODM\Field(type="string")
-     * @Groups({"review:read"})
      */
+    #[ODM\Field(type: "string")]
+    #[Groups(['review:read'])]
     private ?string $username = null;
 
-    /**
-     * @ODM\Field(type="int")
-     * @Groups({"review:read", "review:write"})
-     * @Assert\NotBlank
-     * @Assert\Range(min=1, max=5)
-     */
+    #[ODM\Field(type: "int")]
+    #[Groups(['review:read', 'review:write'])]
+    #[Assert\NotBlank]
+    #[Assert\Range(min: 1, max: 5)]
     private ?int $rating = null;
 
-    /**
-     * @ODM\Field(type="string")
-     * @Groups({"review:read", "review:write"})
-     * @Assert\NotBlank
-     * @Assert\Length(min=10)
-     */
+    #[ODM\Field(type: "string")]
+    #[Groups(['review:read', 'review:write'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 10)]
     private ?string $comment = null;
 
-    /**
-     * @ODM\Field(type="date")
-     * @Groups({"review:read"})
-     */
+    #[ODM\Field(type: "date")]
+    #[Groups(['review:read'])]
     private ?\DateTime $createdAt = null;
 
     public function __construct()
