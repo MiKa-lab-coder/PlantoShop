@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
 import App from './App.jsx';
 import HomePage from './pages/HomePage.jsx';
@@ -10,61 +10,65 @@ import ContactPage from './pages/ContactPage.jsx';
 import CartPage from './pages/CartPage.jsx';
 import ShopPage from './pages/ShopPage.jsx';
 import PlantPage from "./pages/PlantPage.jsx";
-import AdminPage from "./pages/AdminPage.jsx";
-import UserPage from "./pages/UserPage.jsx";
+
+// User Dashboard
+import DashboardLayout from './components/DashboardLayout.jsx';
+import UserProfilePage from './pages/UserProfilePage.jsx';
+import UserOrdersPage from './pages/UserOrdersPage.jsx';
+import UserOrdersDetailsPage from './pages/UserOrdersDetailsPage.jsx';
+import UserSettingsPage from './pages/UserSettingsPage.jsx';
+
+// Admin Dashboard
+import AdminDashboardLayout from './components/AdminDashboardLayout.jsx';
+import AdminPlantsPage from './pages/AdminPlantsPage.jsx';
+import AdminOrdersPage from './pages/AdminOrdersPage.jsx';
+import AdminUsersPage from './pages/AdminUsersPage.jsx';
+
 import './index.css';
 
 // Creation du ROUTEUR
 const router = createBrowserRouter([
     {
-        path: '/', // La route racine
-        element: <App />, // Le composant "coquille"
-        // Les enfants qui seront affichés dans le <Outlet> de App
+        path: '/',
+        element: <App />,
         children: [
+            { path: '/', element: <HomePage /> },
+            { path: '/login', element: <LoginPage /> },
+            { path: '/register', element: <RegisterPage /> },
+            { path: 'contact', element: <ContactPage /> },
+            { path: 'cart', element: <CartPage /> },
+            { path: 'shop', element: <ShopPage /> },
+            { path: '/plant/:id', element: <PlantPage /> },
+            
+            // --- Routes de l'espace utilisateur ---
             {
-                path: '/', // Si l'URL est '/', affiche HomePage
-                element: <HomePage />,
+                path: '/user',
+                element: <DashboardLayout />,
+                children: [
+                    { path: '', element: <Navigate to="profile" replace /> }, 
+                    { path: 'profile', element: <UserProfilePage /> },
+                    { path: 'orders', element: <UserOrdersPage /> },
+                    { path: 'orders/:id', element: <UserOrdersDetailsPage /> },
+                    { path: 'settings', element: <UserSettingsPage /> },
+                ]
             },
+            // --- Routes de l'espace administrateur ---
             {
-                path: '/login', // Si l'URL est '/login', affiche LoginPage
-                element: <LoginPage />,
-            },
-            {
-                path: '/register', // Si l'URL est '/register', affiche RegisterPage
-                element: <RegisterPage/>,
-            },
-            {
-                path: 'contact', // Si l'URL est '/contact', affiche ContactPage'
-                element: <ContactPage/>,
-            },
-            {
-                path: 'cart', // Si l'URL est '/cart', affiche CartPage'
-                element: <CartPage/>,
-            },
-            {
-                path: 'shop', // Si l'URL est '/shop', affiche ShopPage'
-                element: <ShopPage/>,
-            },
-            {
-                path: '/plant/:id', // Si l'URL est '/plant', affiche PlantPage'
-                element: <PlantPage/>,
-            },
-            {
-                path: '/admin', // Si l'URL est '/admin', affiche AdminPage
-                element: <AdminPage/>,
-            },
-            {
-                path: '/user', // Si l'URL est '/user', affiche UserPage
-                element: <UserPage/>,
+                path: '/admin',
+                element: <AdminDashboardLayout />,
+                children: [
+                    { path: '', element: <Navigate to="plants" replace /> },
+                    { path: 'plants', element: <AdminPlantsPage /> },
+                    { path: 'orders', element: <AdminOrdersPage /> },
+                    { path: 'users', element: <AdminUsersPage /> },
+                ]
             }
         ],
     },
 ]);
 
-// On dit à React de rendre le ROUTEUR, et non plus App directement.
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <RouterProvider router={router} />
     </React.StrictMode>
 );
-    
