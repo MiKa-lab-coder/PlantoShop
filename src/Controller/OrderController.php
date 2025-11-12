@@ -15,6 +15,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class OrderController extends AbstractController
 {
+    // Route pour que l'admin voie toutes les commandes
     #[Route('/api/orders', name: 'api_orders_list_all', methods: ['GET'])]
     public function listAllOrders(OrderRepository $orderRepository): JsonResponse
     {
@@ -23,6 +24,7 @@ class OrderController extends AbstractController
         return $this->json($orders, Response::HTTP_OK, [], ['groups' => 'order:read']);
     }
 
+    // Route pour qu'un utilisateur voie son propre historique de commandes
     #[Route('/api/user/orders', name: 'api_user_orders_list', methods: ['GET'])]
     public function listUserOrders(): JsonResponse
     {
@@ -31,6 +33,7 @@ class OrderController extends AbstractController
         return $this->json($user->getOrders(), Response::HTTP_OK, [], ['groups' => 'order:read']);
     }
 
+    // Route pour qu'un utilisateur (ou admin) voie une commande spécifique
     #[Route('/api/orders/{id}', name: 'api_orders_show', methods: ['GET'])]
     public function show(Order $order): JsonResponse
     {
@@ -40,6 +43,7 @@ class OrderController extends AbstractController
         return $this->json($order, Response::HTTP_OK, [], ['groups' => 'order:read']);
     }
 
+    // Route pour créer une commande à partir d'un panier envoyé par le front-end
     #[Route('/api/orders', name: 'api_orders_create', methods: ['POST'])]
     public function create(Request $request, PlantRepository $plantRepository, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -73,7 +77,6 @@ class OrderController extends AbstractController
             }
 
             $quantity = $item['quantity'];
-            // Le prix est récupéré depuis la BDD, pas depuis le client (sécurité)
             $totalPrice += $plant->getPrice() * $quantity;
             
             $order->addPlant($plant);
@@ -95,6 +98,7 @@ class OrderController extends AbstractController
         return $this->json($order, Response::HTTP_CREATED, [], ['groups' => 'order:read']);
     }
 
+    // Route pour que l'admin supprime une commande
     #[Route('/api/orders/{id}', name: 'api_orders_delete', methods: ['DELETE'])]
     public function destroy(Order $order, EntityManagerInterface $entityManager): JsonResponse
     {
