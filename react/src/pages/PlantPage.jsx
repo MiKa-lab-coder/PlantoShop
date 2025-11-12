@@ -4,12 +4,18 @@ import { ShoppingCart, Undo2 } from 'lucide-react';
 import ReviewCarousel from '../components/ReviewCarousel';
 
 function PlantPage() {
+    // Récupérer l'ID de la plante depuis les paramètres de l'URL
     const { id } = useParams();
+
+    // State pour la plante
     const [plant, setPlant] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Navigation
     const navigate = useNavigate();
 
+    // Charger les détails de la plante
     useEffect(() => {
         const fetchPlant = async () => {
             try {
@@ -41,10 +47,12 @@ function PlantPage() {
         fetchPlant();
     }, [id]);
 
+    // Fonction pour ajouter une plante au panier
     const handleAddToCart = (plantToAdd) => {
         const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
         const existingItemIndex = currentCart.findIndex(item => item.plant.id === plantToAdd.id);
 
+        // Mettre à jour le panier
         let newCart;
         if (existingItemIndex > -1) {
             newCart = currentCart.map((item, index) =>
@@ -58,6 +66,7 @@ function PlantPage() {
         alert(`${plantToAdd.name} a été ajouté au panier !`);
     };
 
+    // Fonction pour revenir en arrière
     const handleGoBack = () => {
         navigate(-1);
     };
@@ -70,16 +79,19 @@ function PlantPage() {
         <div className="container mx-auto p-8">
             <button 
                 onClick={handleGoBack} 
-                className="flex items-center gap-2 text-slate-600 hover:text-green-700 mb-6 px-4 py-2 rounded-md
-                 border border-slate-300 hover:border-green-700 transition-colors duration-200"
+                className="flex items-center gap-2 text-slate-600 hover:text-green-700 mb-6 px-4 py-2 rounded-md border
+                 border-slate-300 hover:border-green-700 transition-colors duration-200"
             >
                 <Undo2 size={20} /> Retour
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                    <img src={plant.imageUrl || 'https://via.placeholder.com/400'} alt={plant.name} className="w-full
-                     h-auto object-cover rounded-lg shadow-lg" />
+                    <img 
+                        src={`http://localhost${plant.imageUrl}` || 'https://via.placeholder.com/400'} 
+                        alt={plant.name} 
+                        className="w-full h-auto object-cover rounded-lg shadow-lg" 
+                    />
                 </div>
                 <div className="flex flex-col justify-center">
                     <h2 className="text-4xl font-bold text-green-700 mb-4">{plant.name}</h2>
@@ -98,7 +110,6 @@ function PlantPage() {
                 </div>
             </div>
 
-            {/* Carrousel d'avis */}
             <div className="mt-12 border-t pt-8">
                 <ReviewCarousel plantId={plant.id} />
             </div>
