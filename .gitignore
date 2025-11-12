@@ -56,3 +56,10 @@ Thumbs.db
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+
+# --- Gestion des images ---
+# Ignorer le dossier des uploads générés par l'application
+/public/uploads/
+
+# Mais inclure spécifiquement le dossier des images de seed
+!/public/images/seed/
