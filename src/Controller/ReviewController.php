@@ -40,7 +40,7 @@ class ReviewController extends AbstractController
     // Création d'un avis pour une plante
     #[Route('/plants/{plantId}/reviews', name: 'api_reviews_create_for_plant', methods: ['POST'])]
     public function create(
-        int $plantId,
+        $plantId,
         Request $request,
         SerializerInterface $serializer,
         DocumentManager $documentManager,
@@ -67,8 +67,7 @@ class ReviewController extends AbstractController
         }
 
         if (!$hasOrderedPlant) {
-            return $this->json(['error' => 'Vous ne pouvez laisser un avis que pour les plantes que vous avez achetées.'],
-                Response::HTTP_FORBIDDEN);
+            return $this->json(['error' => 'Vous ne pouvez laisser un avis que pour les plantes que vous avez achetées.'], Response::HTTP_FORBIDDEN);
         }
         
         // Vérification si un avis existe déjà pour cette plante par cet utilisateur
