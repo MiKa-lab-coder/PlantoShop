@@ -9,7 +9,7 @@
     file_server
 
 # Gestion des requete avec PHP FM
-    php_fastcgi unix//var/run/php/php-fpm.sock {
+    php_fastcgi plantPHP:9000 {
     # Définition du chemin du script PHP
     root /var/www/html/public
     # Passage des variables d'environnement Symfony

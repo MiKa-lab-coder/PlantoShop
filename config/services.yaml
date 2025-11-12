@@ -4,8 +4,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-    env(MONGODB_URI): ''
-    env(MONGODB_DB): ''
+    # On définit le dossier de destination pour les images de plantes
+    plant_images_directory: '%kernel.project_dir%/public/uploads/plant_images'
 
 services:
     # default configuration for services in *this* file
@@ -22,5 +22,12 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    # configure services in user-defined directories
+    # App\Service\YourService:
+    #     arguments:
+    #         $someArgument: 'some_value'
+
+    # --- Configuration du service FileUploader ---
+    App\Service\FileUploader:
+        arguments:
+            $targetDirectory: '%plant_images_directory%'
