@@ -14,14 +14,13 @@ class Category
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['plant:read', 'order:read', 'cart:read'])] // ID souvent utile dans les relations
+    #[Groups(['plant:read', 'order:read', 'cart:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['category:read', 'category:write'])]
-    private ?string $name = null; // Nom de la catégorie
+    #[Groups(['category:read', 'category:write', 'plant:read'])]
+    private ?string $name = null;
 
-    // Une catégorie contient des plantes
     #[ORM\OneToMany(mappedBy: 'category', targetEntity: Plant::class, orphanRemoval: true)]
     #[Groups(['category:read'])]
     private Collection $plants;
