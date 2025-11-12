@@ -14,7 +14,7 @@ class Category
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['plant:read', 'order:read', 'cart:read'])]
+    #[Groups(['plant:read', 'order:read', 'cart:read', 'category:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
