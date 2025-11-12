@@ -3,25 +3,29 @@ import { useOutletContext, Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 
 function ShopPage() {
+    // Etat de connexion utilisateur
     const { isLoggedIn } = useOutletContext();
+
+    // State pour les plantes
     const [plants, setPlants] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // State pour la recherche
     const [isSearchResult, setIsSearchResult] = useState(false);
 
+    // Charger les plantes
     useEffect(() => {
         const fetchPlants = async () => {
             try {
                 const searchResultsJSON = localStorage.getItem('searchResults');
 
-                // On vérifie si la clé 'searchResults' existe, même si elle est vide.
                 if (searchResultsJSON !== null) {
                     const searchResults = JSON.parse(searchResultsJSON);
                     setPlants(searchResults);
-                    setIsSearchResult(true); // On note que c'est un résultat de recherche
+                    setIsSearchResult(true);
                     localStorage.removeItem('searchResults');
                 } else {
-                    // Si la clé n'existe pas, on charge toutes les plantes.
                     const response = await fetch('http://localhost/api/plants');
                     if (!response.ok) {
                         throw new Error('Impossible de récupérer les plantes.');
@@ -42,11 +46,10 @@ function ShopPage() {
 
     // Gère l'ajout d'une plante au panier
     const handleAddToCart = (e, plantToAdd) => {
-        // Empêcher la navigation lorsque l'on clique sur le bouton
+        // Empêche le comportement par défaut du lien
         e.stopPropagation();
         e.preventDefault();
 
-        // Verifie
         const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
         const existingItemIndex = currentCart.findIndex(item => item.plant.id === plantToAdd.id);
 
@@ -63,7 +66,7 @@ function ShopPage() {
         alert(`${plantToAdd.name} a été ajouté au panier !`);
     };
 
-    // Gère le clic sur la carte pour stocker la plante avant la redirection
+    // Gère le clic sur une carte de plante
     const handleCardClick = (plant) => {
         localStorage.setItem('selectedPlant', JSON.stringify(plant));
     };
@@ -83,19 +86,19 @@ function ShopPage() {
                         <Link 
                             to={`/plant/${plant.id}`} 
                             key={plant.id} 
-                            onClick={() => handleCardClick(plant)} // Ajout du gestionnaire de clic
+                            onClick={() => handleCardClick(plant)}
                             className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col hover:shadow-xl
                              transition-shadow duration-300"
                         >
-                            <img src={plant.imageUrl || 'https://via.placeholder.com/200'} alt={plant.name}
-                                 className="w-full h-48 object-cover" />
-                            {/* Conteneur principal avec flex-grow pour pousser le pied de page vers le bas */}
+                            <img 
+                                src={`http://localhost${plant.imageUrl}` || 'https://via.placeholder.com/200'} 
+                                alt={plant.name}
+                                className="w-full h-48 object-cover" 
+                            />
                             <div className="p-4 flex flex-col flex-grow">
                                 <h3 className="text-xl font-semibold text-slate-800 mb-2">{plant.name}</h3>
                                 <h4 className="text-l font-semibold text-slate-800 mb-2">{plant.category.name}</h4>
-                                {/* flex-grow sur la description pour qu'elle prenne l'espace disponible */}
                                 <p className="text-slate-600 text-sm mb-4 flex-grow">{plant.description.substring(0, 100)}...</p>
-                                {/* Pied de page de la carte */}
                                 <div className="flex justify-between items-center mt-auto">
                                     <span className="text-lg font-bold text-green-700">{plant.price.toFixed(2)} €</span>
                                     <button
