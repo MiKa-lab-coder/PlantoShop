@@ -34,6 +34,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var string The hashed password
      */
     #[ORM\Column]
+    #[Groups(['user:write'])] // Important: Ne jamais exposer le mot de passe en lecture
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
@@ -82,39 +83,26 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
-     */
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
     }
 
-    /**
-     * @see UserInterface
-     */
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
-
         return array_unique($roles);
     }
 
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;
-
         return $this;
     }
 
-    /**
-     * @see PasswordAuthenticatedUserInterface
-     */
-    public function getPassword(): string
+    // Correction : Autoriser le retour de null
+    public function getPassword(): ?string
     {
         return $this->password;
     }
@@ -122,17 +110,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): static
     {
         $this->password = $password;
-
         return $this;
     }
 
-    /**
-     * @see UserInterface
-     */
     public function eraseCredentials(): void
     {
         // If you store any temporary, sensitive data on the user, clear it here
-        // $this->plainPassword = null;
     }
 
     public function getFirstName(): ?string
@@ -143,7 +126,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setFirstName(string $firstName): static
     {
         $this->firstName = $firstName;
-
         return $this;
     }
 
@@ -155,7 +137,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastName(string $lastName): static
     {
         $this->lastName = $lastName;
-
         return $this;
     }
 
@@ -167,7 +148,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setAddress(?string $address): static
     {
         $this->address = $address;
-
         return $this;
     }
 
@@ -179,13 +159,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPhoneNumber(?string $phoneNumber): static
     {
         $this->phoneNumber = $phoneNumber;
-
         return $this;
     }
 
-    /**
-     * @return Collection<int, Plant>
-     */
     public function getPlants(): Collection
     {
         return $this->plants;
@@ -197,25 +173,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->plants->add($plant);
             $plant->setOwner($this);
         }
-
         return $this;
     }
 
     public function removePlant(Plant $plant): static
     {
         if ($this->plants->removeElement($plant)) {
-            // set the owning side to null (unless already changed)
             if ($plant->getOwner() === $this) {
                 $plant->setOwner(null);
             }
         }
-
         return $this;
     }
 
-    /**
-     * @return Collection<int, Order>
-     */
     public function getOrders(): Collection
     {
         return $this->orders;
@@ -227,41 +197,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $this->orders->add($order);
             $order->setClient($this);
         }
-
         return $this;
     }
 
     public function removeOrder(Order $order): static
     {
         if ($this->orders->removeElement($order)) {
-            // set the owning side to null (unless already changed)
             if ($order->getClient() === $this) {
                 $order->setClient(null);
             }
         }
-
         return $this;
     }
-
-    // Suppression des méthodes getCart et setCart
-    // public function getCart(): ?Cart
-    // {
-    //     return $this->cart;
-    // }
-
-    // public function setCart(?Cart $cart): static
-    // {
-    //     // unset the owning side of the relation if necessary
-    //     if ($cart === null && $this->cart !== null) {
-    //         $this->cart->setOwner(null);
-    //     }
-    //     // set the owning side of the relation if necessary
-    //     if ($cart !== null && $cart->getOwner() !== $this) {
-    //         $cart->setOwner($this);
-    //     }
-
-    //     $this->cart = $cart;
-
-    //     return $this;
-    // }
 }
