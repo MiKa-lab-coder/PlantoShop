@@ -13,23 +13,28 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        login:
-            pattern: ^/api/login
+        # Le pare-feu 'login' a été fusionné dans le pare-feu 'api' ci-dessous
+        # pour une configuration plus simple et plus robuste.
+
+        api:
+            pattern: ^/api
             stateless: true
+            # Ajout de la gestion du login JSON directement ici
             json_login:
                 check_path: /api/login
                 username_path: email
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
-
-        api:
-            pattern: ^/api
-            stateless: true
+            # La gestion JWT reste la même pour les routes authentifiées
             jwt: ~
 
     access_control:
         # --- Routes Publiques (Pas de connexion requise) ---
+        # La requête OPTIONS de pré-vérification CORS doit être publique sur toute l'API.
+
+        - { path: ^/api, roles: PUBLIC_ACCESS, methods: [OPTIONS] }
+        
         # L'inscription et la connexion doivent être publiques.
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
