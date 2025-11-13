@@ -16,6 +16,7 @@ servant d'exemple concret des compétences acquises en matière de conception, d
   - [Technologies Utilisées](#technologies-utilisées)
   - [Prérequis](#prérequis)
   - [Installation](#installation)
+  - [Avertissement sur les performances avec Docker](#avertissement-sur-les-performances-avec-docker)
   - [Utilisation](#utilisation)
   - [Identifiants de Test](#identifiants-de-test)
   - [Gestion des Images](#gestion-des-images)
@@ -76,10 +77,16 @@ Suivez ces étapes pour configurer et lancer le projet en local :
     cd PlantoShop
     ```
 
-2.  **Configurez l'environnement :**
-    Créez un fichier `.env.local` à la racine du projet.
-    Ce fichier contiendra les variables d'environnement spécifiques à votre installation locale 
-    (par exemple, les identifiants de base de données).
+2.  **Configurez l'environnement local :**
+    Copiez le fichier d'environnement de développement (`.env.dev`) pour créer votre configuration locale
+    (`.env.local`). Ce fichier est ignoré par Git et contient déjà toutes les variables nécessaires pour l'environnement Docker.
+    ```bash
+    # Sur Windows (cmd)
+    copy .env.dev .env.local
+    
+    # Sur Linux, macOS ou Git Bash
+    cp .env.dev .env.local
+    ```
 
 3.  **Construisez et lancez les conteneurs Docker :**
     ```bash
@@ -117,6 +124,16 @@ Suivez ces étapes pour configurer et lancer le projet en local :
     cd react
     npm run dev
     ```
+
+## Avertissement sur les performances avec Docker
+
+Lors de l'exécution du projet avec Docker sur des systèmes d'exploitation comme Windows ou macOS,
+vous pourriez remarquer une certaine lenteur.
+Cela est dû à la manière dont Docker gère les volumes de fichiers entre le système hôte et les conteneurs,
+ce qui peut créer un "bottleneck" (goulot d'étranglement) au niveau des opérations de lecture/écriture.
+
+Cette lenteur est typique des environnements de développement locaux 
+et **n'affecte pas les performances de l'application en production** lorsqu'elle est déployée sur un serveur Linux natif.
 
 ## Utilisation
 
