@@ -43,7 +43,7 @@ function UserOrdersPage() {
             {orders.length === 0 ? (
                 <p>Vous n'avez pas encore passé de commande.</p>
             ) : (
-                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="bg-white rounded-lg shadow-md overflow-auto">
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 border-b">
                             <tr>
