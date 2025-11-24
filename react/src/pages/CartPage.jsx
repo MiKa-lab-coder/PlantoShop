@@ -92,7 +92,8 @@ function CartPage() {
                     <div className="mt-8 p-6 bg-white rounded-lg shadow-md text-center">
                         <ShoppingCart className="mx-auto mb-4 text-green-700" size={48} />
                         <p className="text-xl text-slate-700">Votre panier est vide.</p>
-                        <Link to="/shop" className="mt-4 inline-block px-6 py-2 bg-green-700 text-white rounded hover:bg-green-600">
+                        <Link to="/shop" className="mt-4 inline-block px-6 py-2 bg-green-700 text-white rounded
+                         hover:bg-green-600">
                             Retourner à la boutique
                         </Link>
                     </div>
