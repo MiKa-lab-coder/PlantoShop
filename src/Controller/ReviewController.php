@@ -67,7 +67,8 @@ class ReviewController extends AbstractController
         }
 
         if (!$hasOrderedPlant) {
-            return $this->json(['error' => 'Vous ne pouvez laisser un avis que pour les plantes que vous avez achetées.'], Response::HTTP_FORBIDDEN);
+            return $this->json(['error' => 'Vous ne pouvez laisser un avis que pour les plantes que vous avez achetées.'],
+                Response::HTTP_FORBIDDEN);
         }
         
         // Vérification si un avis existe déjà pour cette plante par cet utilisateur
@@ -77,11 +78,13 @@ class ReviewController extends AbstractController
         ]);
 
         if ($existingReview) {
-            return $this->json(['error' => 'Vous avez déjà laissé un avis pour cette plante.'], Response::HTTP_CONFLICT);
+            return $this->json(['error' => 'Vous avez déjà laissé un avis pour cette plante.'],
+                Response::HTTP_CONFLICT);
         }
 
         /** @var Review $review */
-        $review = $serializer->deserialize($request->getContent(), Review::class, 'json', ['groups' => 'review:write']);
+        $review = $serializer->deserialize($request->getContent(), Review::class, 'json',
+            ['groups' => 'review:write']);
         
         $review->setUserId($user->getId());
         $review->setUsername($user->getFirstName());
@@ -100,5 +103,65 @@ class ReviewController extends AbstractController
         $documentManager->flush();
 
         return $this->json($review, Response::HTTP_CREATED, [], ['groups' => 'review:read']);
+    }
+
+    // Modifier un avis
+    #[Route('/reviews/{id}', name: 'api_reviews_update', methods: ['PUT'])]
+    public function update(
+        $id,
+        Request $request,
+        SerializerInterface $serializer,
+        DocumentManager $documentManager,
+        ReviewRepository $reviewRepository,
+        ValidatorInterface $validator
+        ): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $user = $this->getUser();
+
+        /** @var Review $review */
+        $review = $reviewRepository->find($id);
+        if (!$review) {
+            return $this->json(['error' => 'Avis non trouvé.'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($review->getUserId() !== $user->getId()) {
+            return $this->json(['error' => 'Vous ne pouvez pas modifier cet avis']);
+        }
+
+        $serializer->deserialize($request->getContent(), Review::class, 'json',
+            ['object_to_populate' => $review, 'groups' => 'review:write']);
+
+        $errors = $validator->validate($review);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = $error->getMessage();
+            }
+            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
+        }
+
+        $documentManager->flush();
+
+        return $this->json($review, Response::HTTP_OK, [], ['groups' => 'review:read']);
+    }
+
+
+    // Supprimer un avis
+    #[Route('/reviews/{id}', name: 'api_reviews_delete', methods: ['DELETE'])]
+    public function destroy($id, DocumentManager $documentManager, ReviewRepository $reviewRepository): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+        /** @var Review $review */
+        $review = $reviewRepository->find($id);
+        if (!$review) {
+            return $this->json(['error' => 'Avis non trouvé.'], Response::HTTP_NOT_FOUND);
+        }
+
+        $documentManager->remove($review);
+        $documentManager->flush();
+
+        return $this->json(['message' => 'Avis supprimé avec succès.'], Response::HTTP_OK);
     }
 }

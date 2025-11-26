@@ -50,7 +50,8 @@ class CategoryController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-        $category = $serializer->deserialize($request->getContent(), Category::class, 'json', ['groups' => 'category:write']);
+        $category = $serializer->deserialize($request->getContent(), Category::class, 'json',
+            ['groups' => 'category:write']);
 
         $errors = $validator->validate($category);
         if (count($errors) > 0) {
@@ -78,7 +79,8 @@ class CategoryController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-        $serializer->deserialize($request->getContent(), Category::class, 'json', ['object_to_populate' => $category, 'groups' => 'category:write']);
+        $serializer->deserialize($request->getContent(), Category::class, 'json',
+            ['object_to_populate' => $category, 'groups' => 'category:write']);
 
         $errors = $validator->validate($category);
         if (count($errors) > 0) {
