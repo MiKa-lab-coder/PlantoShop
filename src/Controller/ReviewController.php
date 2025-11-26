@@ -146,7 +146,6 @@ class ReviewController extends AbstractController
         return $this->json($review, Response::HTTP_OK, [], ['groups' => 'review:read']);
     }
 
-
     // Supprimer un avis
     #[Route('/reviews/{id}', name: 'api_reviews_delete', methods: ['DELETE'])]
     public function destroy($id, DocumentManager $documentManager, ReviewRepository $reviewRepository): JsonResponse
