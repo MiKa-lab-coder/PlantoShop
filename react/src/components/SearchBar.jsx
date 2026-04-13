@@ -43,9 +43,8 @@ function SearchBar() {
                 }
             }
 
-            // Si aucune plante n'est trouvée, stocker les résultats (même vides) et navigation vers la page produit
-            localStorage.setItem('searchResults', JSON.stringify(finalResults));
-            navigate('/shop');
+            // Résultats passés via le state du router (évite les conflits avec React StrictMode)
+            navigate('/shop', { state: { searchResults: finalResults } });
 
         } catch (err) {
             setError(err.message);

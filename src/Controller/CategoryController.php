@@ -26,10 +26,10 @@ class CategoryController extends AbstractController
     public function search(string $query, CategoryRepository $categoryRepository): JsonResponse
     {
         $categories = $categoryRepository->createQueryBuilder('c')
-           ->where('c.name LIKE :query')
-           ->setParameter('query', '%'.$query.'%')
-           ->getQuery()
-           ->getResult();
+            ->where('LOWER(c.name) LIKE :query')
+            ->setParameter('query', '%' . mb_strtolower($query) . '%')
+            ->getQuery()
+            ->getResult();
 
         return $this->json($categories, Response::HTTP_OK, [], ['groups' => 'category:read']);
     }

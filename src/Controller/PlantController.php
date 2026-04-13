@@ -140,8 +140,8 @@ class PlantController extends AbstractController
 	public function search(string $query, PlantRepository $plantRepository): JsonResponse
 	{
     $plants = $plantRepository->createQueryBuilder('p')
-        ->where('p.name LIKE :query')
-        ->setParameter('query', '%' . $query . '%')
+        ->where('LOWER(p.name) LIKE :query')
+        ->setParameter('query', '%' . mb_strtolower($query) . '%')
         ->getQuery()
         ->getResult();
 

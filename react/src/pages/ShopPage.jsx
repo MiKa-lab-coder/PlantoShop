@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext, Link } from 'react-router-dom';
+import { useOutletContext, Link, useLocation } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { API_URL } from '../services/api.js';
 
 function ShopPage() {
-    // Etat de connexion utilisateur
     const { isLoggedIn } = useOutletContext();
+    const location = useLocation();
 
     // State pour les plantes
     const [plants, setPlants] = useState([]);
@@ -17,24 +17,26 @@ function ShopPage() {
 
     // Charger les plantes
     useEffect(() => {
+        const searchResults = location.state?.searchResults;
+
+        if (searchResults !== undefined) {
+            // Résultats d'une recherche transmis via React Router state
+            setPlants(searchResults);
+            setIsSearchResult(true);
+            setIsLoading(false);
+            return;
+        }
+
+        // Pas de recherche : chargement de tout le catalogue
         const fetchPlants = async () => {
             try {
-                const searchResultsJSON = localStorage.getItem('searchResults');
-
-                if (searchResultsJSON !== null) {
-                    const searchResults = JSON.parse(searchResultsJSON);
-                    setPlants(searchResults);
-                    setIsSearchResult(true);
-                    localStorage.removeItem('searchResults');
-                } else {
-                    const response = await fetch(`${API_URL}/api/plants`);
-                    if (!response.ok) {
-                        throw new Error('Impossible de récupérer les plantes.');
-                    }
-                    const data = await response.json();
-                    setPlants(data);
-                    setIsSearchResult(false);
+                const response = await fetch(`${API_URL}/api/plants`);
+                if (!response.ok) {
+                    throw new Error('Impossible de récupérer les plantes.');
                 }
+                const data = await response.json();
+                setPlants(data);
+                setIsSearchResult(false);
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -43,7 +45,7 @@ function ShopPage() {
         };
 
         fetchPlants();
-    }, []);
+    }, [location.state]);
 
     // Gère l'ajout d'une plante au panier
     const handleAddToCart = (e, plantToAdd) => {
