@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext, Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function ShopPage() {
     // Etat de connexion utilisateur
@@ -26,7 +27,7 @@ function ShopPage() {
                     setIsSearchResult(true);
                     localStorage.removeItem('searchResults');
                 } else {
-                    const response = await fetch('http://localhost/api/plants');
+                    const response = await fetch(`${API_URL}/api/plants`);
                     if (!response.ok) {
                         throw new Error('Impossible de récupérer les plantes.');
                     }
@@ -91,7 +92,7 @@ function ShopPage() {
                              transition-shadow duration-300"
                         >
                             <img 
-                                src={`http://localhost${plant.imageUrl}` || 'https://via.placeholder.com/200'} 
+                                src={`${API_URL}${plant.imageUrl}` || 'https://via.placeholder.com/200'}
                                 alt={plant.name}
                                 className="w-full h-48 object-cover" 
                             />

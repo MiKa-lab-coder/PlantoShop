@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {Pen, User, Mail, Home, Phone, Trash2} from "lucide-react";
+import { API_URL } from '../services/api.js';
 
 function UserSettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +27,7 @@ function UserSettingsPage() {
                 return;
             }
             try {
-                const response = await fetch('http://localhost/api/user/profile', {
+                const response = await fetch(`${API_URL}/api/user/profile`, {
                     headers: {'Authorization': `Bearer ${token}`},
                 });
                 if (!response.ok) {
@@ -62,7 +63,7 @@ function UserSettingsPage() {
         setError(null);
 
         try {
-            const response = await fetch(`http://localhost/api/users/${formState.id}`, {
+            const response = await fetch(`${API_URL}/api/users/${formState.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ function UserSettingsPage() {
         setError(null);
 
         try {
-            const response = await fetch(`http://localhost/api/users/${formState.id}`, {
+            const response = await fetch(`${API_URL}/api/users/${formState.id}`, {
                 method: 'DELETE',
                 headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`},
             });

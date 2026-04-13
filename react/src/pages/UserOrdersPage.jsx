@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function UserOrdersPage() {
     const [orders, setOrders] = useState([]);
@@ -15,7 +16,7 @@ function UserOrdersPage() {
                     throw new Error('Vous devez être connecté pour voir vos commandes.');
                 }
 
-                const response = await fetch('http://localhost/api/user/orders', {
+                const response = await fetch(`${API_URL}/api/user/orders`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
 

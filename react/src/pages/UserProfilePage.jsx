@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Mail, Home, Phone } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function UserProfilePage() {
     const [user, setUser] = useState(null);
@@ -14,7 +15,7 @@ function UserProfilePage() {
                     throw new Error('Vous devez être connecté pour voir votre profil.');
                 }
 
-                const response = await fetch('http://localhost/api/user/profile', {
+                const response = await fetch(`${API_URL}/api/user/profile`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

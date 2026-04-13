@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function SearchBar() {
 
@@ -22,14 +23,14 @@ function SearchBar() {
 
         try {
             // Rechercher des plantes par leur nom
-            const plantResponse = await fetch(`http://localhost/api/plants/search/${searchQuery}`);
+            const plantResponse = await fetch(`${API_URL}/api/plants/search/${searchQuery}`);
             const plantsData = await plantResponse.json();
 
             let finalResults = plantsData;
 
             // Si aucune plante n'est trouvée, rechercher par catégorie
             if (plantsData.length === 0) {
-                const categoryResponse = await fetch(`http://localhost/api/categories/search/${searchQuery}`);
+                const categoryResponse = await fetch(`${API_URL}/api/categories/search/${searchQuery}`);
                 const categoriesData = await categoryResponse.json();
 
                 // Simplification pour ne prendre que le premier résultat et éviter des mélanges de catégorie et de plante
@@ -37,7 +38,7 @@ function SearchBar() {
                 if (categoriesData.length > 0) {
                     const firstCategoryId = categoriesData[0].id;
                     const plantsByCategoryResponse =
-                        await fetch(`http://localhost/api/plants/by-category/${firstCategoryId}`);
+                        await fetch(`${API_URL}/api/plants/by-category/${firstCategoryId}`);
                     finalResults = await plantsByCategoryResponse.json();
                 }
             }

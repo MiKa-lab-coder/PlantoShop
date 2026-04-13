@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Undo2 } from 'lucide-react';
 import ReviewCarousel from '../components/ReviewCarousel';
+import { API_URL } from '../services/api.js';
 
 function PlantPage() {
     // Récupérer l'ID de la plante depuis les paramètres de l'URL
@@ -30,7 +31,7 @@ function PlantPage() {
                     }
                 }
 
-                const response = await fetch(`http://localhost/api/plants/${id}`);
+                const response = await fetch(`${API_URL}/api/plants/${id}`);
                 if (!response.ok) {
                     throw new Error('Impossible de récupérer les détails de la plante.');
                 }
@@ -88,7 +89,7 @@ function PlantPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                     <img 
-                        src={`http://localhost${plant.imageUrl}` || 'https://via.placeholder.com/400'} 
+                        src={`${API_URL}${plant.imageUrl}` || 'https://via.placeholder.com/400'}
                         alt={plant.name} 
                         className="w-full h-auto object-cover rounded-lg shadow-lg" 
                     />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useOutletContext } from 'react-router-dom';
 import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function CartPage() {
     const { isLoggedIn } = useOutletContext();
@@ -56,7 +57,7 @@ function CartPage() {
         // Si l'utilisateur est connecté, on envoie le panier à l'API pour créer la commande
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost/api/orders', {
+            const response = await fetch(`${API_URL}/api/orders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {useNavigate, Link} from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function RegisterPage() {
     // On utilise un seul état pour tout le formulaire
@@ -41,7 +42,7 @@ function RegisterPage() {
 
         // Consommateur de l'API
         try {
-            const response = await fetch('http://localhost/api/register', {
+            const response = await fetch(`${API_URL}/api/register`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({

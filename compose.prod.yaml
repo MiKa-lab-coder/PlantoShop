@@ -1,0 +1,58 @@
+# Overrides de production — à merger explicitement :
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d
+#
+# Avec Coolify : pointer vers ce fichier comme "Docker Compose override file"
+# et définir VITE_API_URL dans les variables d'environnement Coolify.
+
+services:
+
+  # --- Build React (service one-shot) ---
+  # S'exécute une seule fois, construit react/dist/, puis se termine.
+  # Caddy attend la fin de ce service avant de démarrer.
+  react_build:
+    image: node:20-alpine
+    container_name: plantReactBuild
+    working_dir: /app/react
+    volumes:
+      - .:/app
+    environment:
+      # VITE_API_URL est intégré dans le bundle JS au moment du build.
+      # En prod, Coolify injecte : VITE_API_URL=https://mondomaine.com
+      VITE_API_URL: ${VITE_API_URL}
+    command: sh -c "npm ci && npm run build"
+    restart: "no"
+
+  # --- PHP-FPM (prod) ---
+  php:
+    # php.prod.ini : display_errors Off, log_errors On, OPcache optimisé
+    volumes:
+      - .:/var/www/html
+      - php_fpm_socket:/var/run/php
+      - ./docker/php/php.prod.ini:/usr/local/etc/php/conf.d/zz-app.ini
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+
+  # --- Caddy (prod) ---
+  # Sert React SPA (react/dist) + proxifie /api/* vers PHP-FPM
+  caddy:
+    volumes:
+      - ./docker/server/Caddyfile.prod:/etc/caddy/Caddyfile
+      - .:/var/www/html
+      - php_fpm_socket:/var/run/php
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      react_build:
+        condition: service_completed_successfully
+      php:
+        condition: service_started
+
+  # --- PostgreSQL (prod) ---
+  # Ports non exposés : DB inaccessible depuis l'extérieur du réseau Docker
+  database:
+    ports: !reset []
+
+  # --- MongoDB (prod) ---
+  mongodb:
+    ports: !reset []

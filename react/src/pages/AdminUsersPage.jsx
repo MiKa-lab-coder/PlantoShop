@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Edit, Trash2 } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function AdminUsersPage() {
     const [users, setUsers] = useState([]);
@@ -23,7 +24,7 @@ function AdminUsersPage() {
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('Accès non autorisé.');
 
-                const response = await fetch('http://localhost/api/users', {
+                const response = await fetch(`${API_URL}/api/users`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
                 if (!response.ok) {
@@ -65,7 +66,7 @@ function AdminUsersPage() {
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-        const url = isEditing ? `http://localhost/api/users/${formData.id}` : 'http://localhost/api/register';
+        const url = isEditing ? `${API_URL}/api/users/${formData.id}` : `${API_URL}/api/register`;
         const method = isEditing ? 'PUT' : 'POST';
 
         const dataToSubmit = { ...formData };
@@ -104,7 +105,7 @@ function AdminUsersPage() {
         if (!window.confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur #${userId} ?`)) return;
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost/api/users/${userId}`, {
+            const response = await fetch(`${API_URL}/api/users/${userId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` },
             });

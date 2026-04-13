@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Undo2, MessageSquare, Star } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 // Modal pour laisser un avis
 const ReviewModal = ({ plantName, plantId, onClose, onSubmit }) => {
@@ -67,14 +68,14 @@ function UserOrdersDetailsPage() {
 
         const fetchInitialData = async () => {
             try {
-                const reviewsResponse = await fetch('http://localhost/api/user/reviews',
+                const reviewsResponse = await fetch(`${API_URL}/api/user/reviews`,
                     { headers: { 'Authorization': `Bearer ${token}` } });
                 if (!reviewsResponse.ok) throw new Error('Impossible de récupérer vos avis.');
                 const reviewsData = await reviewsResponse.json();
                 setUserReviews(reviewsData);
 
                 if (!order) {
-                    const orderResponse = await fetch(`http://localhost/api/orders/${id}`,
+                    const orderResponse = await fetch(`${API_URL}/api/orders/${id}`,
                         { headers: { 'Authorization': `Bearer ${token}` } });
                     if (!orderResponse.ok) throw new Error('Impossible de récupérer les détails de la commande.');
                     const orderData = await orderResponse.json();
@@ -94,7 +95,7 @@ function UserOrdersDetailsPage() {
     const handleReviewSubmit = async (plantId, reviewData) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost/api/plants/${plantId}/reviews`, {
+            const response = await fetch(`${API_URL}/api/plants/${plantId}/reviews`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(reviewData),

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link, useOutletContext } from 'react-router-dom';
 import { AtSign, Lock, LogIn } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function LoginPage() {
     //
@@ -22,7 +23,7 @@ function LoginPage() {
         setError(null);
 
         try {
-            const response = await fetch('http://localhost/api/login', {
+            const response = await fetch(`${API_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),

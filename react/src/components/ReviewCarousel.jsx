@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Star } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function ReviewCarousel({ plantId }) {
     const [reviews, setReviews] = useState([]);
@@ -11,7 +12,7 @@ function ReviewCarousel({ plantId }) {
 
         const fetchReviews = async () => {
             try {
-                const response = await fetch(`http://localhost/api/plants/${plantId}/reviews`);
+                const response = await fetch(`${API_URL}/api/plants/${plantId}/reviews`);
                 if (!response.ok) {
                     throw new Error('Impossible de charger les avis.');
                 }

@@ -1,8 +1,9 @@
 import SearchBar from '../components/SearchBar.jsx';
+import { API_URL } from '../services/api.js';
 
 function HomePage() {
   // URL de l'image de fond
-  const wallpaperUrl = 'http://localhost/images/seed/wallpaper.png';
+  const wallpaperUrl = `${API_URL}/images/seed/wallpaper.png`;
 
   const pageStyle = {
     backgroundImage: `url(${wallpaperUrl})`,

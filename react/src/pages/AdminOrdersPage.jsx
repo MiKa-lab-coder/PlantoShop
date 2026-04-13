@@ -1,5 +1,6 @@
 import {useState, useEffect} from 'react';
 import {Trash2} from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function AdminOrdersPage() {
     const [orders, setOrders] = useState([]);
@@ -14,7 +15,7 @@ function AdminOrdersPage() {
                     throw new Error('Vous devez être connecté pour voir les commandes.');
                 }
 
-                const response = await fetch('http://localhost/api/orders', {
+                const response = await fetch(`${API_URL}/api/orders`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -40,7 +41,7 @@ function AdminOrdersPage() {
             if (!token) {
                 throw new Error('Vous devez être connecté pour supprimer une commande.');
             }
-            const response = await fetch(`http://localhost/api/orders/${orderId}`, {
+            const response = await fetch(`${API_URL}/api/orders/${orderId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Edit, Trash2 } from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function AdminPlantsPage() {
     const [plants, setPlants] = useState([]);
@@ -25,8 +26,8 @@ function AdminPlantsPage() {
         const fetchData = async () => {
             try {
                 const [plantsResponse, categoriesResponse] = await Promise.all([
-                    fetch('http://localhost/api/plants'),
-                    fetch('http://localhost/api/categories')
+                    fetch(`${API_URL}/api/plants`),
+                    fetch(`${API_URL}/api/categories`)
                 ]);
                 if (!plantsResponse.ok || !categoriesResponse.ok) {
                     throw new Error('Impossible de récupérer les données initiales.');
@@ -95,7 +96,7 @@ function AdminPlantsPage() {
             submissionData.append('imageFile', imageFile);
         }
 
-        const url = isEditing ? `http://localhost/api/plants/${formData.id}?_method=PUT` : 'http://localhost/api/plants';
+        const url = isEditing ? `${API_URL}/api/plants/${formData.id}?_method=PUT` : `${API_URL}/api/plants`;
         const method = 'POST';
 
         try {
@@ -130,7 +131,7 @@ function AdminPlantsPage() {
         if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la plante #${plantId} ?`)) return;
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost/api/plants/${plantId}`, {
+            const response = await fetch(`${API_URL}/api/plants/${plantId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` },
             });

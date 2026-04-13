@@ -1,6 +1,7 @@
 import {useNavigate} from "react-router-dom";
 import {useState} from "react";
 import {SendHorizontal} from 'lucide-react';
+import { API_URL } from '../services/api.js';
 
 function ContactPage() {
     const [formdata, setFormdata] = useState({
@@ -34,7 +35,7 @@ function ContactPage() {
         // Consommateur de l'API
         try {
             // Api fictive de contact
-            const response = await fetch('http://localhost/api/contact', {
+            const response = await fetch(`${API_URL}/api/contact`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(formdata),

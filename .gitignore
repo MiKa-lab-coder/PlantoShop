@@ -9,8 +9,10 @@
 /.env.*.local
 /config/secrets/prod/prod.decrypt.private.php
 *.env.local
-# docker-compose.override.yml
-# *.override.yml
+# Frontend env (Vite)
+/react/.env
+/react/.env.local
+/react/.env.*.local
 
 # Temp, cache, logs
 /var/
@@ -31,6 +33,8 @@
 # Build
 /build/
 /dist/
+/react/.vite/
+/react/dist/
 
 # IDE
 .idea/
