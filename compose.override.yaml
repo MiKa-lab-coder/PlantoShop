@@ -28,7 +28,6 @@ services:
   node:
     container_name: plantNode
     image: node:20-alpine
-    user: node
     working_dir: /var/www/html/react
     volumes:
       - .:/var/www/html
