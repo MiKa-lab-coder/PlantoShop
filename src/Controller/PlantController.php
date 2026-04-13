@@ -135,4 +135,35 @@ class PlantController extends AbstractController
         $entityManager->flush();
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
+	
+	#[Route('/search/{query}', name: 'api_plants_search', methods: ['GET'])]
+	public function search(string $query, PlantRepository $plantRepository): JsonResponse
+	{
+    $plants = $plantRepository->createQueryBuilder('p')
+        ->where('p.name LIKE :query')
+        ->setParameter('query', '%' . $query . '%')
+        ->getQuery()
+        ->getResult();
+
+    return $this->json($plants, Response::HTTP_OK, [], [
+        'groups' => 'plant:read',
+        AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER => fn ($object) => $object->getId(),
+    ]);
+	}
+
+	#[Route('/by-category/{id}', name: 'api_plants_by_category', methods: ['GET'])]
+	public function byCategory(int $id, PlantRepository $plantRepository, CategoryRepository $categoryRepository): JsonResponse
+	{
+    $category = $categoryRepository->find($id);
+    if (!$category) {
+        return $this->json(['error' => 'Catégorie non trouvée'], Response::HTTP_NOT_FOUND);
+    }
+
+    $plants = $plantRepository->findBy(['category' => $category]);
+
+    return $this->json($plants, Response::HTTP_OK, [], [
+        'groups' => 'plant:read',
+        AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER => fn ($object) => $object->getId(),
+    ]);
+	}
 }
