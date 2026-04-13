@@ -43,8 +43,8 @@ function SearchBar() {
                 }
             }
 
-            // Résultats passés via le state du router (évite les conflits avec React StrictMode)
-            navigate('/shop', { state: { searchResults: finalResults } });
+            localStorage.setItem('searchResults', JSON.stringify({ data: finalResults, ts: Date.now() }));
+            navigate('/shop');
 
         } catch (err) {
             setError(err.message);
