@@ -48,6 +48,7 @@ Thumbs.db
 /composer.lock
 /package-lock.json
 /yarn.lock
+/react/package-lock.json
 # Composer bin
 /composer.phar
 
