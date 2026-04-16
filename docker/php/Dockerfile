@@ -28,8 +28,8 @@ RUN useradd -u ${uid} -m ${user} \
 # Entrypoint (copié en root pour pouvoir écrire dans /usr/local/bin, puis rendu exécutable)
 COPY --chmod=755 ./docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# Configuration PHP (dev par défaut ; remplacée par php.prod.ini via volume en prod)
-COPY ./docker/php/php.ini /usr/local/etc/php/conf.d/zz-app.ini
+# prod settings baked in — dev overrides via volume mount in compose.yaml
+COPY ./docker/php/php.prod.ini /usr/local/etc/php/conf.d/zz-app.ini
 
 USER ${user}
 WORKDIR /var/www/html

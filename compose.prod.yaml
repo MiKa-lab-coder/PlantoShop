@@ -45,7 +45,6 @@ services:
     volumes:
       - .:/var/www/html
       - php_fpm_socket:/var/run/php
-      - ./docker/php/php.prod.ini:/usr/local/etc/php/conf.d/zz-app.ini
     environment: *common-env
     depends_on:
       database:
