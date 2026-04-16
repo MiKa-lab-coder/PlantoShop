@@ -62,14 +62,14 @@ class SeedDatabaseCommand extends Command
         $admin = new User();
         $admin->setEmail('admin@plantoshop.com')->setFirstName('Admin')
             ->setLastName('User')->setRoles(['ROLE_ADMIN'])
-              ->setPassword($this->passwordHasher->hashPassword($admin, 'adminpass'));
+            ->setPassword($this->passwordHasher->hashPassword($admin, 'adminpass'));
         $this->entityManager->persist($admin);
         $users[] = $admin;
 
         $user = new User();
         $user->setEmail('user@plantoshop.com')->setFirstName('Regular')
             ->setLastName('User')->setAddress('123 Green St, Plant City')
-             ->setPassword($this->passwordHasher->hashPassword($user, 'userpass'));
+            ->setPassword($this->passwordHasher->hashPassword($user, 'userpass'));
         $this->entityManager->persist($user);
         $users[] = $user;
         $this->entityManager->flush();
@@ -97,8 +97,8 @@ class SeedDatabaseCommand extends Command
         foreach ($plantData as $data) {
             $plant = new Plant();
             $plant->setName($data['name'])->setDescription('Une magnifique ' . $data['name'] . ' pour embellir votre quotidien.')
-                  ->setPrice($data['price'])->setCategory($categories[$data['cat']])
-                  ->setImageUrl('/images/seed/' . $data['img'])->setOwner($admin);
+                ->setPrice($data['price'])->setCategory($categories[$data['cat']])
+                ->setImageUrl('/images/seed/' . $data['img'])->setOwner($admin);
             $this->entityManager->persist($plant);
             $plants[] = $plant;
         }
@@ -109,7 +109,7 @@ class SeedDatabaseCommand extends Command
         foreach ($users as $currentUser) {
             $order = new Order();
             $order->setClient($currentUser);
-            
+
             $totalPrice = 0;
             $plantSummary = [];
             $randomPlants = (array)array_rand($plants, rand(1, 3));
@@ -126,9 +126,9 @@ class SeedDatabaseCommand extends Command
 
             $orderDetails = new OrderDetails();
             $orderDetails->setTheOrder($order)->setClientFirstName($currentUser->getFirstName())
-                         ->setClientLastName($currentUser->getLastName())->setClientEmail($currentUser->getEmail())
-                         ->setClientAddress($currentUser->getAddress())->setClientPhoneNumber($currentUser->getPhoneNumber())
-                         ->setTotalPrice((string)$totalPrice)->setPlantSummary($plantSummary);
+                ->setClientLastName($currentUser->getLastName())->setClientEmail($currentUser->getEmail())
+                ->setClientAddress($currentUser->getAddress())->setClientPhoneNumber($currentUser->getPhoneNumber())
+                ->setTotalPrice((string)$totalPrice)->setPlantSummary($plantSummary);
             $this->entityManager->persist($orderDetails);
         }
         $this->entityManager->flush();
@@ -140,13 +140,13 @@ class SeedDatabaseCommand extends Command
             'Arrivée en parfait état, très bien emballée.', 'Un peu plus petite que ce que j\'imaginais, mais très jolie.',
             'Les couleurs sont superbes, je suis ravi(e) !',
         ];
-        
+
         if ($user) {
             for ($i = 0; $i < 5; $i++) {
                 $review = new Review();
                 $randomPlant = $plants[array_rand($plants)];
                 $review->setPlantId($randomPlant->getId())->setUserId($user->getId())->setUsername($user->getFirstName())
-                       ->setRating(rand(4, 5))->setComment($reviewComments[array_rand($reviewComments)]);
+                    ->setRating(rand(4, 5))->setComment($reviewComments[array_rand($reviewComments)]);
                 $this->documentManager->persist($review);
             }
             $this->documentManager->flush();
@@ -163,7 +163,7 @@ class SeedDatabaseCommand extends Command
         $io->info('Truncating SQL tables (PostgreSQL method)...');
         $connection->executeStatement('TRUNCATE TABLE "order_details", "order_plant", "order", "plant", "category",
          "user" RESTART IDENTITY CASCADE');
-        
+
         $io->info('Dropping reviews collection (MongoDB)...');
         $schemaManager = $this->documentManager->getSchemaManager();
         $schemaManager->dropCollections();
