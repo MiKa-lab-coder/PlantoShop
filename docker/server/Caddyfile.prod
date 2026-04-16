@@ -4,17 +4,17 @@
 # Caddy écoute uniquement sur :80 en interne.
 #
 # Architecture des routes :
-#   /api/*        → PHP-FPM (Symfony)
-#   /images/*     → fichiers statiques servis depuis public/ (uploads, seed)
-#   tout le reste → React SPA (react/dist/) avec fallback sur index.html
+#   /api/*        → PHP-FPM (Symfony) via FastCGI
+#   /images/*     → fichiers statiques depuis /srv/static/public (volume partagé)
+#   /bundles/*    → fichiers statiques depuis /srv/static/public (volume partagé)
+#   tout le reste → React SPA depuis /srv/static/react/dist (volume partagé)
 
 :80 {
     encode gzip zstd
 
     # --- API Symfony ---
     handle /api/* {
-        root * /var/www/html/public
-        php_fastcgi plantPHP:9000 {
+        php_fastcgi php:9000 {
             root /var/www/html/public
             env APP_ENV prod
             env APP_DEBUG 0
@@ -23,20 +23,18 @@
 
     # --- Assets statiques Symfony (images uploadées, seed, bundles) ---
     handle /images/* {
-        root * /var/www/html/public
+        root * /srv/static/public
         file_server
     }
 
     handle /bundles/* {
-        root * /var/www/html/public
+        root * /srv/static/public
         file_server
     }
 
     # --- React SPA ---
-    # Sert les fichiers buildés depuis react/dist.
-    # Tout chemin inconnu retombe sur index.html (React Router gère le routing côté client).
     handle {
-        root * /var/www/html/react/dist
+        root * /srv/static/react/dist
         file_server
         try_files {path} /index.html
     }

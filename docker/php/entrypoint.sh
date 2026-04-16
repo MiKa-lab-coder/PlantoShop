@@ -4,30 +4,30 @@ set -e
 # ---------------------------------------------------------------------------
 # Entrypoint du conteneur PHP-FPM
 # Exécuté à chaque démarrage du conteneur, avant php-fpm.
+# vendor/ et react/dist/ sont déjà présents (copiés au build Docker).
 # ---------------------------------------------------------------------------
 
-# --- 1. Dépendances Composer ---
-# En dev, vendor/ est souvent absent du clone (gitignored).
-# On installe automatiquement pour ne pas avoir à le faire manuellement.
-if [ ! -d "vendor" ]; then
-    echo "[entrypoint] vendor/ absent — lancement de composer install..."
-    if [ "${APP_ENV}" = "prod" ]; then
-        composer install --no-dev --optimize-autoloader --no-interaction --no-progress
-    else
-        composer install --no-interaction --no-progress
-    fi
-    echo "[entrypoint] composer install terminé."
-fi
+# --- 1. Fichiers statiques vers le volume partagé (lu par Caddy) ---
+# Caddy ne peut pas monter l'image PHP — on exporte public/ et react/dist/
+# vers /srv/static au démarrage, puis Caddy démarre une fois ce volume prêt.
+echo "[entrypoint] Export des fichiers statiques vers /srv/static..."
+mkdir -p /srv/static/public /srv/static/react/dist
+cp -r /var/www/html/public/. /srv/static/public/
+cp -r /var/www/html/react/dist/. /srv/static/react/dist/
+echo "[entrypoint] Export terminé."
 
 # --- 2. Clés JWT ---
-# Si les clés n'existent pas (premier démarrage ou nouveau clone),
-# on les génère via la commande Symfony du bundle Lexik.
 if [ ! -f "config/jwt/private.pem" ]; then
     echo "[entrypoint] Clés JWT absentes — génération en cours..."
     mkdir -p config/jwt
     php bin/console lexik:jwt:generate-keypair --skip-if-exists
     echo "[entrypoint] Clés JWT générées dans config/jwt/."
 fi
+
+# --- 3. Migrations Doctrine ---
+echo "[entrypoint] Lancement des migrations..."
+php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+echo "[entrypoint] Migrations terminées."
 
 # --- Passe la main à la commande principale (php-fpm) ---
 exec "$@"

@@ -1,0 +1,6 @@
+.git
+vendor/
+react/node_modules/
+react/dist/
+.env.local
+.env.*.local
