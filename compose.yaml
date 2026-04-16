@@ -1,8 +1,10 @@
-# Variables d'environnement communes injectées dans le service PHP
+# Environnement de développement — fichier unique, autonome.
+# Lancement : docker compose up -d
+
 x-common-env: &common-env
   APP_ENV: ${APP_ENV:-dev}
   APP_SECRET: ${APP_SECRET}
-  APP_DEBUG: ${APP_DEBUG:-0}
+  APP_DEBUG: ${APP_DEBUG:-1}
   DEFAULT_URI: ${DEFAULT_URI:-http://localhost}
   CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-http://localhost:5173}
   DATABASE_URL: ${DATABASE_URL}
@@ -67,6 +69,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
+    ports:
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -79,8 +83,22 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGODB_DB:-plantoshop_db}
+    ports:
+      - '27017:27017'
     volumes:
       - mongo_data:/data/db
+
+  # --- Node / Vite (dev server React) ---
+  node:
+    container_name: plantNode
+    image: node:20-alpine
+    working_dir: /var/www/html/react
+    volumes:
+      - .:/var/www/html
+      - node_modules:/var/www/html/react/node_modules
+    ports:
+      - '5173:5173'
+    command: sh -c "rm -f package-lock.json && npm install && npm run dev -- --host 0.0.0.0"
 
 volumes:
   php_fpm_socket:
@@ -88,3 +106,4 @@ volumes:
   mongo_data:
   caddy_data:
   caddy_config:
+  node_modules:
