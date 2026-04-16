@@ -35,13 +35,24 @@ services:
 
   # --- Caddy (prod) ---
   # Sert React SPA (react/dist) + proxifie /api/* vers PHP-FPM
+  # Traefik (Coolify) gère SSL/TLS en amont sur 80/443.
   caddy:
+    ports: !reset []
     volumes:
       - ./docker/server/Caddyfile.prod:/etc/caddy/Caddyfile
       - .:/var/www/html
       - php_fpm_socket:/var/run/php
       - caddy_data:/data
       - caddy_config:/config
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.plantoshop.rule=Host(`plantoshop.mika-lab.ovh`)"
+      - "traefik.http.routers.plantoshop.tls=true"
+      - "traefik.http.routers.plantoshop.tls.certresolver=letsencrypt"
+      - "traefik.http.services.plantoshop.loadbalancer.server.port=80"
+    networks:
+      - default
+      - coolify
     depends_on:
       react_build:
         condition: service_completed_successfully
@@ -56,3 +67,7 @@ services:
   # --- MongoDB (prod) ---
   mongodb:
     ports: !reset []
+
+networks:
+  coolify:
+    external: true
