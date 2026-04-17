@@ -62,7 +62,7 @@ class SeedDatabaseCommand extends Command
         $admin = new User();
         $admin->setEmail('admin@plantoshop.com')->setFirstName('Admin')
             ->setLastName('User')->setRoles(['ROLE_ADMIN'])
-            ->setPassword($this->passwordHasher->hashPassword($admin, 'adminpass'));
+            ->setPassword($this->passwordHasher->hashPassword($admin, 'Pl@nt0Shop_Adm1n#2026'));
         $this->entityManager->persist($admin);
         $users[] = $admin;
 

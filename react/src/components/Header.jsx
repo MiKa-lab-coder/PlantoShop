@@ -19,7 +19,6 @@ function Header({ isLoggedIn, onLogout, isAdmin }) {
         <nav className="hidden md:flex gap-6 items-center">
           <Link to="/" className="text-slate-600 hover:text-green-700">Accueil</Link>
           <Link to="/shop" className="text-slate-600 hover:text-green-700">Boutique</Link>
-          <Link to="/contact" className="text-slate-600 hover:text-green-700">Nous Contacter</Link>
         </nav>
 
         {/* Icônes d'action */}
@@ -78,8 +77,6 @@ function Header({ isLoggedIn, onLogout, isAdmin }) {
              hover:text-green-600">Accueil</Link>
             <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-2xl text-slate-800
              hover:text-green-600">Boutique</Link>
-            <Link to="/contact" onClick={() => setIsMenuOpen(false)} className="text-2xl text-slate-800
-             hover:text-green-600">Nous Contacter</Link>
             
             {/* Liens conditionnels pour le menu mobile */}
             {isAdmin && (

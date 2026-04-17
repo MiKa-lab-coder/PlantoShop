@@ -45,7 +45,7 @@
 Thumbs.db
 
 # Fichiers de Composer / NPM
-/composer.lock
+# composer.lock est commité intentionnellement (builds reproductibles en prod)
 /package-lock.json
 /yarn.lock
 /react/package-lock.json

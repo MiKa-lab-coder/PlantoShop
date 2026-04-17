@@ -19,20 +19,9 @@ x-common-env: &common-env
 
 services:
 
-  # --- Build React (service one-shot) ---
-  # S'exécute une seule fois, construit react/dist/, puis se termine.
-  react_build:
-    image: node:20-alpine
-    container_name: plantReactBuild
-    working_dir: /app/react
-    volumes:
-      - .:/app
-    environment:
-      VITE_API_URL: ${VITE_API_URL}
-    command: sh -c "npm install && npm run build"
-    restart: "no"
-
   # --- PHP-FPM ---
+  # L'image embarque : code PHP, vendor/ (composer), react/dist/ (Vite).
+  # L'entrypoint exporte public/ et react/dist/ vers static_files pour Caddy.
   php:
     container_name: plantPHP
     build:
@@ -41,11 +30,18 @@ services:
       args:
         user: app
         uid: 1000
+        VITE_API_URL: ${VITE_API_URL}
     restart: always
     volumes:
-      - .:/var/www/html
       - php_fpm_socket:/var/run/php
+      - static_files:/srv/static
     environment: *common-env
+    healthcheck:
+      test: ["CMD", "test", "-f", "/srv/static/react/dist/index.html"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
     depends_on:
       database:
         condition: service_healthy
@@ -54,15 +50,16 @@ services:
 
   # --- Caddy ---
   # Traefik (Coolify) gère SSL/TLS en amont.
-  # Caddy sert les fichiers statiques React et proxifie /api/* vers PHP-FPM.
+  # Caddyfile et fichiers statiques sont baked dans l'image — aucun bind mount.
   caddy:
-    image: caddy:2.7.5-alpine
+    build:
+      context: .
+      dockerfile: docker/server/Dockerfile.caddy
     container_name: plantCaddy
     restart: unless-stopped
     volumes:
-      - ./docker/server/Caddyfile.prod:/etc/caddy/Caddyfile
-      - .:/var/www/html
       - php_fpm_socket:/var/run/php
+      - static_files:/srv/static:ro
       - caddy_data:/data
       - caddy_config:/config
     labels:
@@ -75,10 +72,8 @@ services:
       - default
       - coolify
     depends_on:
-      react_build:
-        condition: service_completed_successfully
       php:
-        condition: service_started
+        condition: service_healthy
 
   # --- PostgreSQL ---
   database:
@@ -111,6 +106,7 @@ services:
 
 volumes:
   php_fpm_socket:
+  static_files:
   postgres_data:
   mongo_data:
   caddy_data:
