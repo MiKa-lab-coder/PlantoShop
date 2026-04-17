@@ -13,11 +13,16 @@
     encode gzip zstd
 
     # --- API Symfony ---
+    # rewrite force index.php ; REQUEST_URI original est préservé par Caddy pour le routage Symfony
     handle /api/* {
-        php_fastcgi php:9000 {
-            root /var/www/html/public
-            env APP_ENV prod
-            env APP_DEBUG 0
+        rewrite * /index.php
+        reverse_proxy php:9000 {
+            transport fastcgi {
+                root /var/www/html/public
+                split .php
+                env APP_ENV prod
+                env APP_DEBUG 0
+            }
         }
     }
 
