@@ -41,6 +41,7 @@ RUN useradd -u ${uid} -m ${user} \
 
 COPY --chmod=755 ./docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY ./docker/php/php.prod.ini /usr/local/etc/php/conf.d/zz-app.ini
+COPY ./docker/php/zz-pool.conf /usr/local/etc/php-fpm.d/zz-pool.conf
 
 WORKDIR /var/www/html
 
