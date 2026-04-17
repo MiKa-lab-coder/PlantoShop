@@ -23,7 +23,13 @@ echo "[entrypoint] Migrations..."
 php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 echo "[entrypoint] Migrations terminées."
 
-# --- 3. Fichiers statiques → volume partagé (lu par Caddy) ---
+# --- 3. Permissions var/ pour PHP-FPM (www-data) ---
+# Les commandes console ci-dessus tournent en root → cache créé en root.
+# PHP-FPM tourne en www-data → doit pouvoir écrire dans var/.
+mkdir -p /var/www/html/var/cache /var/www/html/var/log
+chown -R www-data:www-data /var/www/html/var
+
+# --- 4. Fichiers statiques → volume partagé (lu par Caddy) ---
 echo "[entrypoint] Export vers /srv/static..."
 mkdir -p /srv/static/public /srv/static/react/dist
 cp -r /var/www/html/public/. /srv/static/public/
