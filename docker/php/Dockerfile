@@ -50,8 +50,9 @@ COPY --chown=${user}:${user} . .
 # react/dist/ compilé depuis le stage Node
 COPY --from=react_builder --chown=${user}:${user} /app/react/dist ./react/dist
 
-# Dépendances Composer au build — pas au runtime
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+# Dépendances Composer au build — sans scripts post-install (pas de .env au build)
+# cache:clear et assets:install s'exécutent dans l'entrypoint au runtime
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
 
 EXPOSE 9000
 
