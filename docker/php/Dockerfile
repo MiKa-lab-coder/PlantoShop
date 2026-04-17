@@ -51,8 +51,11 @@ COPY --chown=${user}:${user} . .
 # react/dist/ compilé depuis le stage Node
 COPY --from=react_builder --chown=${user}:${user} /app/react/dist ./react/dist
 
-# Dépendances Composer au build — sans scripts post-install (pas de .env au build)
-# cache:clear et assets:install s'exécutent dans l'entrypoint au runtime
+# .env minimal requis par Symfony bootEnv (cherche ce fichier même si APP_ENV est déjà défini)
+# Les vraies valeurs sont injectées par Docker Compose au runtime et écrasent ce fichier.
+RUN echo "APP_ENV=prod" > .env
+
+# Dépendances Composer au build — sans scripts post-install (pas de .env complet au build)
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
 
 EXPOSE 9000
