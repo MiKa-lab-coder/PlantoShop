@@ -42,7 +42,6 @@ RUN useradd -u ${uid} -m ${user} \
 COPY --chmod=755 ./docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY ./docker/php/php.prod.ini /usr/local/etc/php/conf.d/zz-app.ini
 
-USER ${user}
 WORKDIR /var/www/html
 
 # Code applicatif (vendor/, react/node_modules/ et react/dist/ exclus via .dockerignore)
