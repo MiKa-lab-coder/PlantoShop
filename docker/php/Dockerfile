@@ -15,7 +15,8 @@ RUN npm run build
 # ============================================================
 # Stage 2 : PHP-FPM + code applicatif complet
 # ============================================================
-FROM php:8.4-fpm
+# 8.4.27 corrige CVE-2026-109618 et CVE-2026-109619 (PHP2Shell, RCE)
+FROM php:8.4.27-fpm
 
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions
