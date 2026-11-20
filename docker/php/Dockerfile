@@ -1,5 +1,5 @@
 # 8.4.27 corrige CVE-2026-109618 et CVE-2026-109619 (PHP2Shell, RCE)
-FROM php:8.4.27-fpm
+FROM php:8.4.28-fpm
 
 RUN apt-get update && apt-get install -y \
     git \
