@@ -79,6 +79,7 @@ services:
   database:
     container_name: plantDB_PGSQL
     image: postgres:16-alpine
+    pull_policy: always
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-plantodb}
@@ -96,6 +97,7 @@ services:
   mongodb:
     container_name: plantDB_Mongo
     image: mongo:6.0
+    pull_policy: always
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
