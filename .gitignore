@@ -1,6 +1,8 @@
-# Dépendances PHP et JS
-/vendor/             # Dépendances Composer
-/node_modules/       # Dépendances npm
+# Dépendances PHP et JS (pas de commentaire en fin de ligne : git l'intègre au motif)
+# Composer
+/vendor/
+# npm
+/node_modules/
 
 # Env
 /.env
