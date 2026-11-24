@@ -64,6 +64,9 @@ services:
       - caddy_config:/config
     labels:
       - "traefik.enable=true"
+      # Caddy est sur 3 réseaux : sans ce label Traefik choisit une IP au hasard et peut
+      # prendre celle d'un réseau qu'il ne joint pas (site bloqué sans erreur).
+      - "traefik.docker.network=coolify"
       - "traefik.http.routers.plantoshop.rule=Host(`plantoshop.mika-lab.ovh`)"
       - "traefik.http.routers.plantoshop.tls=true"
       - "traefik.http.routers.plantoshop.tls.certresolver=letsencrypt"
